@@ -1,0 +1,67 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compile, test and package
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+
+      # 仓库目前保留了本机代理，GitHub runner 无法访问该地址。
+      # 只调整 CI 检出副本，不修改开发者的本地配置。
+      - name: Remove local proxy settings for CI
+        run: sed -i '/^systemProp\.https\./d' gradle.properties
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      # check 包含测试及其编译依赖；同一次调用复用任务结果。
+      # 使用虚拟显示器运行 IntelliJ 平台测试。
+      - name: Compile, test and build plugin
+        run: xvfb-run --auto-servernum ./gradlew check buildPlugin --no-daemon --stacktrace
+
+      - name: Upload plugin ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          name: coursemind-plugin-${{ github.run_number }}
+          path: build/distributions/*.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-${{ github.run_number }}
+          path: |
+            build/reports/tests/
+            build/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
