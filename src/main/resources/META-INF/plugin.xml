@@ -24,14 +24,18 @@
                     anchor="last"/>
         </action>
     </actions>
-<!--    <extensions defaultExtensionNs="com.intellij">-->
-<!--        <toolWindow factoryClass="org.jetbrains.plugins.template.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>-->
-<!--        <postStartupActivity implementation="org.jetbrains.plugins.template.startup.MyProjectActivity" />-->
-<!--    </extensions>-->
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow
                 id="CourseMind"
                 anchor="right"
                 factoryClass="top.chende.coursemind.toolwindow.CourseMindToolWindowFactory"/>
+
+        <applicationService serviceImplementation="top.chende.coursemind.config.CourseMindSettings"/>
+        <applicationService serviceImplementation="top.chende.coursemind.auth.AuthService"/>
+
+        <applicationConfigurable
+                id="top.chende.coursemind.settings"
+                displayName="CourseMind"
+                instance="top.chende.coursemind.settings.CourseMindConfigurable"/>
     </extensions>
 </idea-plugin>
