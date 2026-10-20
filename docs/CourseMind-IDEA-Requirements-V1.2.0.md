@@ -1,6 +1,6 @@
 # CourseMind IDEA 插件完整需求文档
 
-版本：V1.2.1（M0 基线核对修订；含三门课程统一教学环境、课程任务闭环、机房登录即用）  
+版本：V1.2.2（含 M0 基线核对修订、M1/M2 落地范围与 Plugin Verifier 验证矩阵）  
 日期：2026-10-20（V1.2 为 2026-10-19）  
 目标仓库：`dedeguo/coursemind-idea`  
 关联产品：CourseMind 采集端、服务端、VS Code/Trae/CodeBuddy 扩展、学生工作台
@@ -362,13 +362,21 @@ IDEA 插件只需调用上表前半部分；`records` 由 collector 调用，插
 | 维度 | 首版目标 | 验证要求 |
 | --- | --- | --- |
 | Windows x64 | P0 | 完整安装、登录、Hook、采集、跳转、升级 |
-| IDEA 2023.3 | P0 最低基线 | Plugin Verifier＋人工端到端 |
-| IDEA 2026.2.x（本机 `IU-262.10968.63`） | P0 本地目标 | Build/JBR 已核对，local 剖面可构建；端到端待 M1 后验收 |
-| 中间主版本 | 发布前选择代表版本 | Verifier；核心链路抽测 |
-| Community/Ultimate 对应产品 | 根据可获取版本分别核对 | 避免无必要的付费模块依赖 |
+| IC 2023.3（233，Community） | P0 最低基线 | Plugin Verifier 无阻断问题＋人工端到端；以 release 产物为唯一证据 |
+| IU 2023.3（233，Ultimate） | P0 旗舰版基线 | 同一份 release 产物 Verifier 通过，确认未依赖付费模块 |
+| IU 2026.2.x（本机 `IU-262.10968.63`） | P0 本地目标 | Verifier＋端到端；local 剖面产物仅用于调试，不作兼容证据 |
+| 中间主版本（2024.1、2024.3、2025.1 等代表版本） | 发布前选取 | Verifier 全量；核心链路抽测 |
+| Community/Ultimate 对应产品 | 每个受测版本分别核对 | 只依赖 `com.intellij.modules.platform`，避免付费模块依赖 |
 | macOS Intel/Apple Silicon | P1 | 独立产物、权限及完整链路 |
 | Linux x64 | P1 | 独立产物、权限及完整链路 |
 | 其他 JetBrains IDE、WSL/远程开发 | P2 | 不纳入首版支持承诺 |
+
+**兼容验证方式（M4 落地，DEV-24）**：
+
+- 只用**一份 release 产物**覆盖 2023.3 及以上版本：`since-build=233`、**不写 `until-build`**（2024.3 起该字段已无必要且会限制新版本安装）。不为单个 IDE 版本重复编译。
+- 在 `build.gradle.kts` 配置 IntelliJ Platform Gradle Plugin 2.x 的 `intellijPlatform { pluginVerification { ides { ... } } }`，由 `verifyPlugin` 任务执行；矩阵至少包含 IC 2023.3、IU 2023.3、2024.1、2024.3、2025.1、IU 2026.2；CI 增加 Verifier 任务并归档报告。
+- Verifier 报告作为 AC-04 的机器证据；`local` 剖面产物不计入兼容性证据。
+- 出现告警时按类型处理：可忽略的内部 API 告警、需适配的移除 API、需提升 `since-build` 的新 API 使用。不得用"为每个版本重编一版"掩盖 API 依赖问题。
 
 Gradle distribution 沿用腾讯云镜像方向，普通依赖优先已验证的国内镜像，JetBrains 专用源保留官方。CI 使用实际可用的稳定源；锁定工具版本，不用浮动 latest 保证可复现构建。
 
@@ -451,7 +459,7 @@ Gradle distribution 沿用腾讯云镜像方向，普通依赖优先已验证的
 | M1 插件入口 | Tool Window、设置、连接检测、登录、身份 | 可正常配置并保存状态 |
 | M2 设置与预配置 | 设置页 collector 部署（含双部署仲裁）、CodeBuddy Hook 合并/备份/修复 | 管理员预配置及学生仅登录使用通过 |
 | M3 教学与采集闭环 | 课程任务、项目关联、提交入口及状态；共享凭据、队列、去重、CodeBuddy 回答提取 | AC-22～AC-24 及采集异常用例通过；缺失教学接口与票据由服务端配套 |
-| M4 发布准备 | 兼容验证、离线包、升级与清理、安装文档 | ZIP可分发，具备可审查的发布资料 |
+| M4 发布准备 | 兼容验证（Plugin Verifier 版本矩阵）、离线包、升级与清理、安装文档 | ZIP 可分发，Verifier 报告与验收记录可查 |
 | M5 扩展 | Marketplace、跨IDE免重复登录、Claude Code、Trae 写入、macOS/Linux | 分项测试通过后扩大支持声明 |
 
 M3 的顺序修正（V1.2，2026-10-20 更新）：原计划把"凭据跨进程"当作待设计能力，实际已由共享 `auth.dat`＋`config.json` 解决，M3 的工作是**核对与复用**；CodeBuddy 回答提取已在采集端核对为具备。剩余真实缺口是工作台票据与课程/任务/提交接口（服务端侧，见 DEV-21），不在 IDEA 插件仓库内完成。
@@ -533,13 +541,14 @@ Marketplace 上架准备插件说明、图标、截图、支持范围、隐私�
 | DEV-14 | 暂停、切换身份/服务器的协调流程 | DEV-07、11、12 | 旧队列不串账号、不改投服务器 |
 | DEV-15 | 配置清理、升级迁移与故障恢复 | DEV-08、09、14 | 保留其他Hook及共享组件，失败能恢复 |
 | DEV-16 | 诊断、错误提示及学生安装说明 | DEV-10、12、15 | 可定位常见故障，诊断无敏感信息 |
-| DEV-17 | 兼容验证、打包与首版验收 | DEV-03、DEV-21～23及其余P0任务 | AC-01至AC-24记录可查，产物版本一致 |
+| DEV-17 | 兼容验证、打包与首版验收 | DEV-03、DEV-24、DEV-21～23及其余P0任务 | AC-01至AC-24记录可查，产物版本一致 |
 | DEV-18 | 实测 IDEA 内 CodeBuddy 插件是否触发 Hook | 无 | **已核对（2026-10-19）**：IDEA 内提问采集成功，记录在 Trae Code 面板可见 |
 | DEV-20 | collector 诊断补充 `client`/`version`/`cwd`，支撑按项目与宿主归因（原仓库实现） | DEV-12 | 状态面板可判断"当前项目是否有过事件" |
 | DEV-19 | 核对 collector 已部署产物与仓库源码差异，确定打包基线 | DEV-01 | 明确版本号、缓存格式与升级路径 |
 | DEV-21 | 核对并配套课程、任务、绑定、提交状态接口和工作台页面 | DEV-02 | 实际契约、权限及服务端缺口明确，不编造已有端点 |
 | DEV-22 | 课程任务面板及当前项目关联 | DEV-06、21 | EDU-01～04、06 通过，三类课程及多窗口验证 |
 | DEV-23 | 任务提交跳转、结果刷新及三门课程闭环联调 | DEV-13、22 | EDU-05 与 AC-24 通过，真实提交状态可查 |
+| DEV-24 | 配置 Plugin Verifier（`verifyPlugin`）与版本矩阵：IC/IU 2023.3、2024.1、2024.3、2025.1、IU 2026.2；CI 归档报告 | DEV-03 | 每个矩阵版本有 Verifier 结论，无阻断级兼容问题，报告随发布归档；单份 release 产物覆盖 233+ |
 
 DEV-11 及 DEV-13 的剩余部分需要在 `coursemind-collect` 的采集端/服务端实现，应在原仓库完成并标注对应版本。不要为了让 IDEA 面板显示成功而只实现模拟结果。DEV-09 的合并算法应与 VS Code 扩展的 `claudeHookMergeCore` 保持同一识别口径（"命令是否指向当前 collector"），否则两个写入方会互相判定对方为"非受管"而重复追加。
 
@@ -626,3 +635,4 @@ DEV-11 及 DEV-13 的剩余部分需要在 `coursemind-collect` 的采集端/服
 | V1.2 使用流程修订 | 2026-10-19 | 按机房还原卡场景取消首次使用向导；教师/管理员在普通设置页预配置，学生仅登录；固定 IDEA 内 CodeBuddy；明确 Hook 配置界面及 Hook → collector → 服务端采集链路；同步流程、任务、界面、验收标准，新增 AC-19～AC-21 |
 | V1.2 教学定位整合 | 2026-10-19 | 将统一三门课程环境确立为首要目标；补充职责分工、课程场景、当前与目标流程、五项首版能力；新增 EDU-01～06、DEV-21～23、AC-22～24，同步系统边界、接口契约及交付标准；保留 CodeBuddy、无首次向导和机房登录即用约束 |
 | V1.2.1 | 2026-10-20 | M0 基线核对完成（报告见 `docs/CourseMind-IDEA-M0-Baseline.md`），并合并此前分叉的两份需求文档。修正事实：本机 IDE 为 `IU-262.10968.63`（JBR 25.0.4，非 2026.2.3/21）；`auth.dat`、`identity.json`、`upload_key` 是登录态产物，当前本机未登录；仓库 `client/collect.py` 已含 CodeBuddy 回答提取，二进制与部署产物 sha256 一致；`pending.json` 与 `collector.db` 用途不同；`Stop` 事件可能携带短正文。工程侧已拆分为 release/local 双构建剖面并接入 `pluginSinceBuild`。新增契约缺口登记：`upload_key` 为全局静态密钥、`machine_id` 取内网 IP、部署无版本大小比较与自检、凭据无跨进程写锁 |
+| V1.2.2 | 2026-10-20 | 补充 M4 的兼容验证方式：单份 release 产物（`since-build=233`、不写 `until-build`）覆盖 2023.3 及以上；新增 DEV-24（配置 `verifyPlugin` 与版本矩阵 IC/IU 2023.3、2024.1、2024.3、2025.1、IU 2026.2，CI 归档报告）；9.2 验证矩阵细化为逐版本要求，明确 local 剖面产物不作兼容证据。仅更新文档，构建脚本改动留待 M4 实施 |

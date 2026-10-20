@@ -94,7 +94,27 @@ java -version
 .\gradlew.bat buildPlugin
 ```
 
-生成的 ZIP 位于 `build/distributions/`：release 为 `coursemind-idea-0.3.0.zip`，local 为 `coursemind-idea-0.3.0-local.zip`（仅供本机调试，不用于分发）。ZIP 内含 `runtime/win32-x64/collector.exe`，体积约 9 MB。在目标 IDEA 的 `Settings → Plugins` 中打开齿轮菜单，选择 `Install Plugin from Disk…`，选中 ZIP 后按提示安装。
+生成的 ZIP 位于 `build/distributions/`：release 为 `coursemind-idea-0.3.0.zip`，local 为 `coursemind-idea-0.3.0-local.zip`。ZIP 内含 `runtime/win32-x64/collector.exe`，体积约 9 MB。在目标 IDEA 的 `Settings → Plugins` 中打开齿轮菜单，选择 `Install Plugin from Disk…`，选中 ZIP 后按提示安装。
+
+### 两个产物的区别
+
+两者是**同一份源码**、同一个插件 ID（`top.chende.coursemind`）、内置同一个 `collector.exe 0.2.9`，差别只在"用哪套 IDEA SDK 编译"和版本标记：
+
+| 项 | `coursemind-idea-0.3.0.zip`（release） | `coursemind-idea-0.3.0-local.zip`（local） |
+| --- | --- | --- |
+| 编译平台 | IC **2023.3**（build 233，Community） | 本机已安装 IDE（当前 `IU-262.10968.63`，2026.2） |
+| 编译 JDK | toolchain 17 | toolchain 25（字节码仍是 Java 17） |
+| 插件版本 | `0.3.0` | `0.3.0-local` |
+| `since-build` | 233 | 233（仅声明，未在旧版验证） |
+| 测试依赖 | 不含 `com.intellij.modules.ultimate` | 测试编译时引入 ultimate（不进运行时） |
+| 用途 | 分发给学生/机房，用于 2023.3 兼容验证 | 只在本机 `runIde` 调试 |
+| 风险 | 最低基线仅构建级验证，尚需 Plugin Verifier 与端到端 | 按 2026.2 API 编译，装到 2023.3 可能出现 `NoSuchMethodError` |
+
+使用注意：
+
+- **不要分发 `-local` 包**；学生与机房统一使用 release 包。
+- 两个包插件 ID 相同，**只能安装一个**，换包会替换已安装版本；`0.3.0-local` 与 `0.3.0` 版本号不同，来回切换时 IDEA 可能提示"降级/升级"，属正常。
+- 验证 AC-04（IDEA 2023.3 可安装运行）必须用 **release** 包在 IC 2023.3 上测试，`-local` 不能作为兼容性证据。
 
 ## 项目结构
 
