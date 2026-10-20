@@ -61,4 +61,9 @@ public final class RuntimePaths {
     public @NotNull Path versionFile() {
         return root.resolve("version.json");
     }
+
+    /** 部署前的旧版本备份目录（与 VS Code 扩展同名，互不覆盖）。 */
+    public @NotNull Path backupsDir() {
+        return root.resolve("backups");
+    }
 }

@@ -16,8 +16,9 @@ CourseMind 的 IntelliJ IDEA 插件，基于 JetBrains 官方 IntelliJ Platform 
 | `Tools → CourseMind：项目信息` | 显示当前项目的名称和目录；未打开项目时不可用 |
 | 右侧 `CourseMind` 工具窗口 | 未配置/未登录/已登录/过期/读取失败五种状态；登录后显示姓名、学号、班级、服务器与凭据有效期；支持测试连接与退出登录 |
 | `Settings → CourseMind` | 服务器地址、连接测试、采集开关、配置来源与作用域说明（含共享 `config.json` 冲突提示） |
+| `Settings → CourseMind → 采集器与 CodeBuddy Hook` | 检测/部署内置 collector（版本不降级、部署前备份、部署后自检）；检查/预览并应用/移除 CourseMind Hook 条目，保留第三方事件 |
 
-登录复用共享凭据：`auth.dat`（DPAPI CurrentUser）、`identity.json` 与 `config.json` 的 `upload_key`，与 VS Code/Trae 扩展使用同一套文件；插件不保存明文 Token。collector 部署与 Hook 配置属于 M2，状态面板与采集闭环属于 M3，尚未接入。
+登录复用共享凭据：`auth.dat`（DPAPI CurrentUser）、`identity.json` 与 `config.json` 的 `upload_key`，与 VS Code/Trae 扩展使用同一套文件；插件不保存明文 Token。采集器部署与 Hook 配置已在 M2 接入；采集状态面板、队列与上传确认属于 M3，尚未接入。
 
 ## 本地开发
 
@@ -32,8 +33,8 @@ CourseMind 的 IntelliJ IDEA 插件，基于 JetBrains 官方 IntelliJ Platform 
 
 | 剖面 | 触发方式 | 平台依赖 | JDK | 产物 |
 | --- | --- | --- | --- | --- |
-| release（默认） | `.\gradlew.bat buildPlugin` | `IC 2023.3`（官方安装包） | 17 | `coursemind-idea-0.2.0.zip`，`since-build=233` |
-| local | `.\gradlew.bat -PcourseMindProfile=local buildPlugin` | `local(<本机 IDEA 目录>)` | 25 | `coursemind-idea-0.2.0-local.zip` |
+| release（默认） | `.\gradlew.bat buildPlugin` | `IC 2023.3`（官方安装包） | 17 | `coursemind-idea-0.3.0.zip`，`since-build=233` |
+| local | `.\gradlew.bat -PcourseMindProfile=local buildPlugin` | `local(<本机 IDEA 目录>)` | 25 | `coursemind-idea-0.3.0-local.zip` |
 
 剖面由 `courseMindProfile` 显式选择，默认 `release`；`local` 版本号会追加 `-local` 后缀，避免与发布产物同名覆盖。
 
@@ -93,7 +94,7 @@ java -version
 .\gradlew.bat buildPlugin
 ```
 
-生成的 ZIP 位于 `build/distributions/`：release 为 `coursemind-idea-0.2.0.zip`，local 为 `coursemind-idea-0.2.0-local.zip`（仅供本机调试，不用于分发）。在目标 IDEA 的 `Settings → Plugins` 中打开齿轮菜单，选择 `Install Plugin from Disk…`，选中 ZIP 后按提示安装。
+生成的 ZIP 位于 `build/distributions/`：release 为 `coursemind-idea-0.3.0.zip`，local 为 `coursemind-idea-0.3.0-local.zip`（仅供本机调试，不用于分发）。ZIP 内含 `runtime/win32-x64/collector.exe`，体积约 9 MB。在目标 IDEA 的 `Settings → Plugins` 中打开齿轮菜单，选择 `Install Plugin from Disk…`，选中 ZIP 后按提示安装。
 
 ## 项目结构
 
@@ -165,7 +166,7 @@ release 剖面首次需要下载约 1GB 的 IC 2023.3，耗时取决于网络。
 | --- | --- | --- |
 | M0 基线核对 | 复用清单、联调契约、双剖面构建、collector 产物核对 | 已完成（2026-10-20） |
 | M1 插件入口 | Tool Window、设置页、连接检测、登录与身份 | 已完成（0.2.0，2026-10-20 本机验证） |
-| M2 接入自动化 | collector 部署（含双部署仲裁）、CodeBuddy Hook 合并/备份/修复 | 待开发 |
+| M2 接入自动化 | collector 部署（含双部署仲裁）、CodeBuddy Hook 合并/备份/修复 | 开发完成（0.3.0），待管理员预配置场景手工验证 |
 | M3 采集闭环 | 共享凭据复用、队列与去重、状态面板、工作台入口 | 待开发 |
 | M4 发布准备 | 兼容验证、离线包、升级与清理、安装文档 | 待开发 |
 

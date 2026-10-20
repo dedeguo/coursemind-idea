@@ -1,6 +1,7 @@
 package top.chende.coursemind.toolwindow;
 
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
@@ -186,7 +187,7 @@ final class CourseMindPanel {
                 snapshot = new AuthService.Snapshot(AuthService.State.ERROR, null, e.getMessage());
             }
             AuthService.Snapshot result = snapshot;
-            ApplicationManager.getApplication().invokeLater(() -> applySnapshot(result));
+            onEdt(() -> applySnapshot(result));
         });
     }
 
@@ -273,7 +274,7 @@ final class CourseMindPanel {
                 error = "登录失败：" + (e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
             }
             String message = error;
-            ApplicationManager.getApplication().invokeLater(() -> {
+            onEdt(() -> {
                 loginButton.setEnabled(true);
                 if (message == null) {
                     passwordField.setText("");
@@ -300,7 +301,7 @@ final class CourseMindPanel {
                 error = e.getMessage();
             }
             String message = error;
-            ApplicationManager.getApplication().invokeLater(() -> {
+            onEdt(() -> {
                 if (message != null) {
                     identityMessage.setText("退出失败：" + message);
                 } else {
@@ -324,7 +325,12 @@ final class CourseMindPanel {
                 message = e.getMessage();
             }
             String result = message;
-            ApplicationManager.getApplication().invokeLater(() -> identityMessage.setText(result));
+            onEdt(() -> identityMessage.setText(result));
         });
+    }
+
+    /** 工具窗口在模态对话框打开时也要能刷新，因此显式使用 {@link ModalityState#any()}。 */
+    private static void onEdt(@NotNull Runnable runnable) {
+        ApplicationManager.getApplication().invokeLater(runnable, ModalityState.any());
     }
 }

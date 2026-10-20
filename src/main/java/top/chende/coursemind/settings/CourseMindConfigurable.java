@@ -41,6 +41,7 @@ public final class CourseMindConfigurable implements Configurable {
     private final JButton testButton = new JButton("测试连接");
 
     private JPanel panel;
+    private CollectorHookPanel collectorHookPanel;
 
     @Override
     public @Nls String getDisplayName() {
@@ -52,6 +53,7 @@ public final class CourseMindConfigurable implements Configurable {
         if (panel == null) {
             testButton.addActionListener(event -> testConnection());
             serverField.setColumns(30);
+            collectorHookPanel = new CollectorHookPanel();
 
             JPanel statusRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
             statusRow.add(testButton);
@@ -65,6 +67,8 @@ public final class CourseMindConfigurable implements Configurable {
                     .addSeparator()
                     .addComponent(new JBLabel("<html><b>采集</b></html>"))
                     .addComponent(collectEnabledCheckBox)
+                    .addSeparator()
+                    .addComponent(collectorHookPanel.component())
                     .addSeparator()
                     .addComponent(new JBLabel("<html><b>配置来源与作用域</b></html>"))
                     .addComponent(scopeLabel)
@@ -186,5 +190,6 @@ public final class CourseMindConfigurable implements Configurable {
     @Override
     public void disposeUIResources() {
         panel = null;
+        collectorHookPanel = null;
     }
 }
