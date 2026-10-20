@@ -6,7 +6,7 @@ CourseMind 的 IntelliJ IDEA 插件，基于 JetBrains 官方 IntelliJ Platform 
 
 相关文档：
 
-- [需求文档 V1.2](docs/CourseMind-IDEA-Requirements-V1.2.0.md)：功能范围、业务流程、接口依赖、验收标准与开发任务清单。
+- [需求文档 V1.2.1](docs/CourseMind-IDEA-Requirements-V1.2.0.md)：功能范围、业务流程、接口依赖、验收标准与开发任务清单。
 - [M0 基线核对报告](docs/CourseMind-IDEA-M0-Baseline.md)：复用清单、联调契约、构建结论、collector 产物核对与差异清单。
 
 ## 当前功能

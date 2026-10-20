@@ -119,7 +119,7 @@
 | `config.json` | `server_url`、`server_id`、`cache_dir`、`identity_file`、队列上限/重试/超时、`diagnostic_*`、`classroom`，**登录后才追加 `upload_key`** | 登录成功写；登出/过期/回滚时 `clearUploadKey()` |
 
 - 扩展 `persist()` 顺序：auth.dat → 宿主镜像 → `config`+`identity.json`；末步失败按字节回滚 auth.dat。
-- 并发现状：仅"临时文件+rename"+重试，**没有跨进程锁**。需求文档第 128 行要求的"单一写入锁＋最后写入者校验 serverId/studentId"在采集端**尚未实现**（见 D-09）。
+- 并发现状：仅"临时文件+rename"+重试，**没有跨进程锁**。需求文档 6.3 节"残留风险"要求的"单一写入锁＋最后写入者校验 serverId/studentId"在采集端**尚未实现**（见 D-09）。
 - `serverId` = 规范化后的 `server_url`（去尾斜杠）；`server-mismatch` 时不覆盖、不删除原凭据。
 
 ### 4.5 CodeBuddy Hook 契约（本机实测复核）
@@ -226,7 +226,7 @@ log-collector/
   collector.db（155,648 B，2026-10-19）  collector.log（44,544 B，2026-08-30）
 ```
 
-与需求文档第 145 行的差异：当前**不存在** `auth.dat`、`identity.json`，`config.json` 中**不存在** `upload_key`——这是"未登录/凭据已清理"状态，不是共享凭据机制失效（`diagnostic` 中同时出现 `reason=missing upload_key`）。另 `cache/` 与 `log-collector/collector.db` 并存，说明"JSON 队列"与"SQLite 诊断库"是两种用途，不是二选一的版本差异。
+与需求文档 6.4 节目录约定的差异：当前**不存在** `auth.dat`、`identity.json`，`config.json` 中**不存在** `upload_key`——这是"未登录/凭据已清理"状态，不是共享凭据机制失效（`diagnostic` 中同时出现 `reason=missing upload_key`）。另 `cache/` 与 `log-collector/collector.db` 并存，说明"JSON 队列"与"SQLite 诊断库"是两种用途，不是二选一的版本差异。
 
 ### 6.3 源码与产物差异（核对 `client/collect.py`，HEAD `dab28be` 2026-10-14）
 
@@ -250,19 +250,19 @@ log-collector/
 
 | 编号 | 需求文档位置 | 文档描述 | 实况 | 处置 |
 | --- | --- | --- | --- | --- |
-| D-01 | 第 12、270、286 行 | 本地调试目标为 IDEA 2026.2.3 | 本机为 `IU-262.10968.63`（安装目录名 `idea-2026.2.0.1.win`） | 已修订文档，构建改用 `local(localIdePath)` |
-| D-02 | 第 276 行 | 本机 IDEA 2026.2 的 JBR 为 21 | JBR 为 25.0.4，且自带 `javac`/`ct.sym`，可直接作 toolchain 25 | 已修订文档；本机另有 `D:\DevEnv\jdk-25.0.4` |
-| D-03 | 第 126、145 行 | 目录内含 `auth.dat`、`identity.json` | 当前两者均不存在，`config.json` 无 `upload_key`；诊断显示 `skipped_not_logged_in` | 已修订文档：文件随登录状态存在 |
-| D-04 | 第 147、190 行 | 仓库 `collect.py` 无 CodeBuddy 回答提取，落后于产物 | HEAD 已含 `enrich_codebuddy_stop()`（2026-09-26 提交） | 已修订文档；打包基线不受影响 |
-| D-05 | 第 190 行 | `Stop` 事件不携带回答正文 | 实测有一条 `Stop` 的 `last_assistant_message_length=84` | 已修订为"可能携带但不保证完整" |
-| D-06 | 第 278 行 | 代理 `127.0.0.1:7897` 不应作为仓库默认值 | 本次按确认保留；CI 用 `sed` 删除 | 已登记风险，M4 前改为可选 |
-| D-07 | 第 276 行 | `pluginSinceBuild` 与 `build.gradle.kts` 矛盾 | 已拆分剖面；`pluginSinceBuild` 原本未接入 `patchPluginXml`，现已接入 | 已修复 |
-| D-08 | 第 145 行 | 0.2.9 缓存形态是 SQLite，仓库是 JSON | `pending.json` 与 `collector.db` 同时存在，用途不同 | 已修订文档 |
-| D-09 | 第 124、128 行 | 不得以可编辑字段作为授权依据；需单一写入锁 | `upload_key` 为服务端全局静态密钥；records 只校验该 key，`student_id` 由客户端自带；`auth.dat`/`config.json` 无跨进程锁 | 新登记契约缺口，M1/M3 前需服务端与采集端确认 |
-| D-10 | 第 188 行 | 服务端唯一键 `(machine_id, session_id, turn_seq, record_type)` | `machine_id()` 取本机内网 IP（UDP 连 8.8.8.8），换网即变 | 登记风险：断网恢复/换网可能产生重复记录 |
-| D-11 | 第 142、143 行 | COL-09/COL-10 多部署方仲裁 | 扩展侧仅字符串相等比较，无"不降级" | IDEA 侧必须自行实现（见 6.4） |
-| D-12 | 第 137 行 | COL-04 部署前校验完整性与自检 | 扩展侧仅校验内置包哈希，不校验已部署 exe，无自检调用 | 登记为 M2 待补 |
-| D-13 | 第 212 行 | 无法按项目路径归因 | `record.cwd` 存在（待上传条目里有），但诊断不记录 cwd 值、上传后条目删除 | 维持 DEV-20，措辞细化为"面板不可回查" |
+| D-01 | 1 节、9.1 节、9.2 节 | 本地调试目标为 IDEA 2026.2.3 | 本机为 `IU-262.10968.63`（安装目录名 `idea-2026.2.0.1.win`） | 已修订文档，构建改用 `local(localIdePath)` |
+| D-02 | 9.1 节 | 本机 IDEA 2026.2 的 JBR 为 21 | JBR 为 25.0.4，且自带 `javac`/`ct.sym`，可直接作 toolchain 25 | 已修订文档；本机另有 `D:\DevEnv\jdk-25.0.4` |
+| D-03 | 6.3 节、6.4 节 | 目录内含 `auth.dat`、`identity.json` | 当前两者均不存在，`config.json` 无 `upload_key`；诊断显示 `skipped_not_logged_in` | 已修订文档：文件随登录状态存在 |
+| D-04 | 6.4 节、6.6 节 | 仓库 `collect.py` 无 CodeBuddy 回答提取，落后于产物 | HEAD 已含 `enrich_codebuddy_stop()`（2026-09-26 提交） | 已修订文档；打包基线不受影响 |
+| D-05 | 6.6 节、20.3 节 | `Stop` 事件不携带回答正文 | 实测有一条 `Stop` 的 `last_assistant_message_length=84` | 已修订为"可能携带但不保证完整" |
+| D-06 | 9.1 节构建注意 | 代理 `127.0.0.1:7897` 不应作为仓库默认值 | 本次按确认保留；CI 用 `sed` 删除 | 已登记风险，M4 前改为可选 |
+| D-07 | 9.1 节 | `pluginSinceBuild` 与 `build.gradle.kts` 矛盾 | 已拆分剖面；`pluginSinceBuild` 原本未接入 `patchPluginXml`，现已接入 | 已修复 |
+| D-08 | 6.4 节目录约定 | 0.2.9 缓存形态是 SQLite，仓库是 JSON | `pending.json` 与 `collector.db` 同时存在，用途不同 | 已修订文档 |
+| D-09 | 6.3 节 AUTH-06 段 | 不得以可编辑字段作为授权依据；需单一写入锁 | `upload_key` 为服务端全局静态密钥；records 只校验该 key，`student_id` 由客户端自带；`auth.dat`/`config.json` 无跨进程锁 | 新登记契约缺口，M1/M3 前需服务端与采集端确认 |
+| D-10 | 6.6 节数据来源段 | 服务端唯一键 `(machine_id, session_id, turn_seq, record_type)` | `machine_id()` 取本机内网 IP（UDP 连 8.8.8.8），换网即变 | 登记风险：断网恢复/换网可能产生重复记录 |
+| D-11 | 6.4 节 COL-09/COL-10 | COL-09/COL-10 多部署方仲裁 | 扩展侧仅字符串相等比较，无"不降级" | IDEA 侧必须自行实现（见 6.4） |
+| D-12 | 6.4 节 COL-04 | COL-04 部署前校验完整性与自检 | 扩展侧仅校验内置包哈希，不校验已部署 exe，无自检调用 | 登记为 M2 待补 |
+| D-13 | 6.8 节现状限制 | 无法按项目路径归因 | `record.cwd` 存在（待上传条目里有），但诊断不记录 cwd 值、上传后条目删除 | 维持 DEV-20，措辞细化为"面板不可回查" |
 | D-14 | 第 9 章、第 19 章 | 工程为模板改造，存在构建矛盾 | 已确认；模板 Kotlin 示例仍在源码树但未注册 | M1 清理，M0 不动 |
 | D-15 | 第 9.1 节（平台获取） | 未涉及下载通道差异 | 安装包通道（`download.jetbrains.com`）可用；Maven 归档通道（`cache-redirector`）在本机代理下下载 0 字节挂起 | 已加 `platformUseInstaller` 开关，默认安装包 |
 | D-16 | 第 14 章（构建产物） | 未要求区分两套产物 | 双剖面最初共用同名 ZIP，后者覆盖前者 | 已为 local 剖面加 `-local` 版本后缀 |
