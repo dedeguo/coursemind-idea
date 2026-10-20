@@ -1,0 +1,532 @@
+# CourseMind IDEA 插件完整需求文档
+
+版本：V1.2（课程统一环境基线：IDEA ＋ CodeBuddy ＋ CourseMind）  
+日期：2026-10-19  
+目标仓库：`dedeguo/coursemind-idea`  
+关联产品：CourseMind 采集端、服务端、VS Code/Trae/CodeBuddy 扩展、学生工作台
+
+## 1. 文档定位与依据
+
+本文将此前讨论整理为开发、联调和验收依据，不代表功能已经实现。V1.2 起，采集现状依据 `coursemind-collect` 仓库与本机实际部署核对，仍不代表 IDEA 插件侧已有实现；服务端接口名、字段须在实施前核对。
+
+已确定的方向：开发可安装到 IntelliJ IDEA 的 CourseMind 插件；支持学生常用的 IDEA 2023.3 及以上版本；整合登录、Hook 配置和 collector 部署；考虑插件市场发布及升级。此前兼容基线为 IDEA 2023.3、Java 17；当前本地调试环境为用户安装的 IDEA 2026.2.x（2026-10-20 实测 build `IU-262.10968.63`，安装目录名 `idea-2026.2.0.1.win`，JBR 25.0.4）。
+
+**环境决策（V1.2 新增，最高优先级约束）**：Java 程序设计、Java Web 开发技术、软件项目综合实训三门课程统一使用「IntelliJ IDEA ＋ CodeBuddy ＋ CourseMind 课程插件」。当前是过渡态——学生用 Trae Code 写代码并与 AI 对话，用 IDEA 开发和调试；目标形态是把 AI 对话搬进 IDEA 内的 CodeBuddy 插件，减少 IDE 切换。因此：
+
+- 首版采集目标是 **CodeBuddy**（IDEA 内插件形态），不是 Claude Code；
+- IDEA 插件不承担"提供 AI 能力"的职责，只做 CourseMind 的身份、部署、Hook、状态和入口；
+- 过渡期内 Trae Code 的采集链路必须继续可用，不得因安装 IDEA 插件而中断（见 6.4 双部署仲裁）。
+
+本文建议的首版边界：Windows 优先，CodeBuddy 采集优先；Claude Code、Trae 直接写入、macOS/Linux 和学习引导放入后续迭代。优先级属于产品建议，不将未经核验的工具能力视为既有能力。
+
+优先级：P0＝首版交付必需，P1＝首版之后优先迭代，P2＝扩展能力。
+
+## 2. 背景与目标
+
+CourseMind 已围绕学生使用 AI 编程工具的过程开展对话采集、身份绑定与教学分析。IDEA 插件应让学生在熟悉的 Java 开发环境完成接入，减少手动复制采集器、编辑 Hook 和重复登录。
+
+交付目标：
+
+1. 学生安装插件后，通过引导完成服务器配置、登录、采集器部署和 Hook 配置。
+2. 在 IDEA 内使用 CodeBuddy 提问时，对话按当前授权身份上传到已有 CourseMind 服务端。
+3. 插件显示采集链路状态，提供检测、修复、暂停和诊断入口。
+4. 学生从插件打开工作台，查看 AI 对话、提交项目文档和查看消息；免登录跳转依赖服务端票据接口（当前未实现，见 6.7）。
+5. 复用现有采集协议和服务端能力，减少 IDEA 与其他客户端之间的业务差异。
+
+不以“替代 CodeBuddy”“开发新的 AI 聊天系统”为首版目标；不默认具备读取 IDEA AI Assistant、Junie 或其他第三方插件会话的能力；不承诺采集未提供可配置 Hook 的 AI 工具，也不通过逆向或私有接口读取其会话。
+
+## 3. 用户与职责
+
+| 角色 | 使用需求 | 边界 |
+| --- | --- | --- |
+| 学生 | 登录、接入采集、查看状态、打开工作台 | 仅访问本人数据 |
+| 教师 | 发布安装说明、指导排障、通过服务端查看教学数据 | 教师分析功能继续由服务端承载 |
+| 维护者 | 管理版本、兼容矩阵、升级和诊断 | 不通过插件获取学生明文密码或任意本地文件 |
+
+插件按操作系统用户隔离。本机同一用户可能打开多个 IDEA 项目，也可能同时使用 CodeBuddy IDE、VS Code 或 Trae；账号及队列必须避免串用。
+
+## 4. 产品范围与系统边界
+
+| 组件 | 负责 | 不负责 |
+| --- | --- | --- |
+| IDEA 插件 | UI、身份接入、部署与检测、Hook 管理、工作台入口 | 重复实现服务端权限和统计规则 |
+| CodeBuddy（IDEA 内插件） | 承载学生的 AI 对话，按 `~/.codebuddy/settings.json` 触发 Hook | 由 CourseMind 控制或改造 |
+| collector | 接收适配工具事件、解析记录、持久化待上传数据、重试上传 | 弹出 IDEA UI、依赖 IDEA 一直运行 |
+| 服务端 | 身份认证、权限、接收与去重、工作台跳转票据 | 任意信任客户端传入的学生 ID |
+| 工作台 | 对话浏览、项目材料、个人资料、消息 | 要求已从插件跳转的学生再次输入账号密码 |
+| AI 工具适配层 | 工具差异、事件和会话数据定位 | 假定所有工具 Hook 格式完全相同 |
+
+建议采用“IDEA 插件薄客户端＋共享 collector＋现有服务端”架构。collector 继续复用现有实现，语言重写不作为本插件交付前提。
+
+共享边界（V1.2 明确）：AI 工具适配与 collector 部署已由 `coursemind-collect` 仓库的 VS Code 扩展实现，已注册 `trae-code`、`claude-code`、`codebuddy`、`workbuddy` 四个 source。IDEA 插件是同一套共享组件与 Hook 文件的**第二个调用方**，不是替代实现方；任何适配逻辑在 IDEA 侧重写一遍都会带来重复部署与配置争用。
+
+## 5. 核心使用流程
+
+### 5.1 首次使用
+
+安装插件 → 打开 CourseMind 面板 → 阅读采集说明 → 设置服务器并测试 → 登录 → 检测 AI 工具 → 部署 collector → 预览并应用 Hook 变更 → 运行测试 → 显示接入结果。
+
+每一步显示完成、失败、跳过状态；失败可重试，重新打开向导可继续。环境测试与真实会话采集分别显示，不用“配置存在”代替“已采集成功”。
+
+### 5.2 日常使用
+
+学生在 IDEA 内 CodeBuddy 提问 → CodeBuddy 依 `~/.codebuddy/settings.json` 触发 Hook → collector 记录事件并定位允许采集的会话内容 → 根据身份及服务端地址加入队列 → 后台上传 → 服务端返回确认 → 插件读取本地运行状态。
+
+首版入口是 IDEA 内的 CodeBuddy 插件，不是 IDEA 终端中的 CLI：学生此时不通过终端调用 AI，Claude Code CLI 不适配。过渡期学生仍在 CodeBuddy IDE 或 Trae Code 里对话，这些入口使用**同一个** `collector.exe` 和**同一个** `~/.codebuddy/settings.json`／`~/.trae-cn/hooks.json`，因此是否存在可采集链路取决于 Hook 文件与 Hooks 开关状态，不因“IDEA 插件已安装”自动推断支持。
+
+### 5.3 免登录工作台
+
+插件使用有效身份向服务端申请短时、一次性票据 → 在系统默认浏览器打开服务端允许的地址 → 服务端兑换为浏览器会话 → 进入工作台。失败提示重新登录或重试，不把长期 Token 放入 URL。
+
+### 5.4 切换账号或服务器
+
+暂停提交 → 处理旧身份队列 → 清除或撤销旧凭据 → 登录新身份 → 更新有效配置 → 恢复采集。旧队列保持原身份及服务器绑定，不得改投新账号或新服务器；无法恢复旧身份时允许删除旧队列，并说明影响。
+
+## 6. 功能需求
+
+### 6.1 安装与初始化
+
+| 编号 | 优先级 | 要求 | 验收条件 |
+| --- | --- | --- | --- |
+| INS-01 | P0 | 支持从磁盘安装插件 ZIP | 安装后可打开面板和设置 |
+| INS-02 | P0 | 首次启动显示接入向导 | 完成后不重复打扰，可手动重开 |
+| INS-03 | P0 | 检测操作系统、架构、可写目录和已有组件 | 不支持的环境给出具体原因 |
+| INS-04 | P0 | 一键接入执行可追踪步骤 | 显示每步结果，失败不虚报成功 |
+| INS-05 | P1 | 通过 Marketplace 分发 | 固定插件 ID，发布正式版本 |
+| INS-06 | P0 | 向导显示 Hook 文件为**用户级共享**（同一文件的改动会同时影响 CodeBuddy IDE 等入口） | 变更预览中列出文件路径、受影响入口与回滚方式 |
+
+安装插件不等于已经获得修改全局 Hook 的授权。向导应明确显示将修改的文件和采集范围，学生执行“应用配置”后才写入；后续兼容升级可在已授权范围内幂等迁移。由于 `~/.codebuddy/settings.json` 是账号/用户级共享文件，向导不得表述为"仅对 IDEA 生效"。
+
+### 6.2 设置与服务器配置
+
+| 编号 | 优先级 | 要求 |
+| --- | --- | --- |
+| CFG-01 | P0 | 提供 CourseMind 设置页：服务器地址、连接测试、AI 工具适配、collector 状态、采集开关 |
+| CFG-02 | P0 | 校验 URL，规范化路径；保存后能够准确解释实际接入的服务器 |
+| CFG-03 | P0 | 普通设置与凭据分离，提供配置版本和迁移能力 |
+| CFG-04 | P0 | 展示生效配置来源和作用域，不静默覆盖其他 IDE 已配置的服务器 |
+| CFG-05 | P0 | 与 VS Code 扩展共享非敏感配置（服务器地址、采集开关），冲突时提示选用哪套；Trae 侧暂只读 |
+
+生产接入使用 HTTPS；本地或校园内网测试可显式启用 HTTP，并在设置页说明连接状态。所有地址、路径及超时采用集中配置，不在多个模块硬编码。
+
+### 6.3 登录、身份与凭据
+
+| 编号 | 优先级 | 要求 | 验收条件 |
+| --- | --- | --- | --- |
+| AUTH-01 | P0 | 对接现有认证方式 | 使用真实服务端完成登录和身份读取 |
+| AUTH-02 | P0 | 显示姓名、学号/账号、服务器 | 数据来自服务端认证结果 |
+| AUTH-03 | P0 | 安全保存必要凭据 | 设置文件、Hook 命令和日志无明文 Token |
+| AUTH-04 | P0 | 处理过期、撤销、退出和切换账号 | 不无限重试，不继续使用失效凭据 |
+| AUTH-05 | P1 | 跨 IDE 登录复用 | 不依赖读取其他 IDE 的私有密码库 |
+| AUTH-06 | P0 | 复用既有共享凭据存储，不新建并行机制 | 与 CodeBuddy IDE / Trae 使用同一 `auth.dat`，切换账号后两边一致 |
+| AUTH-07 | P0 | 不主张 collector 需要学生 JWT | collector 仅用 `config.json` 的 upload_key 上传 |
+
+服务端根据认证凭据确定学生身份；即使协议含 student_id，也不得以可编辑字段作为授权依据。
+
+**V1.2 核对结论（原“跨进程凭据 P0 阻塞”已解除）**：采集端已有可复用的共享机制——学生 JWT 由 DPAPI `CurrentUser` 加密后存 `%LOCALAPPDATA%\CourseMind\auth.dat`，`identity.json` 存非敏感身份，`config.json` 的 `upload_key` 供 collector 以 `X-Upload-Key` 上传；collector 不读取、不刷新学生 JWT。IDEA 插件必须挂到这套存储上（同一 Windows 用户、同一加密域），不得另建 `SecretStorage`/自定义文件作为唯一来源，否则会出现"IDEA 已登录、CodeBuddy 采集仍是旧身份"的分裂身份。PasswordSafe 仅可作为可选镜像，不作为唯一凭据来源。
+
+残留风险：`auth.dat` 与 `config.json` 的写入方从 1 个（VS Code 扩展）变为 2 个（+IDEA 插件），必须约定单一写入锁与"最后写入者需校验 serverId/studentId 一致"，否则切换服务器会互相覆盖。**核对补充（2026-10-20）**：这三类文件是**登录态的产物**——未登录或凭据被清理时 `auth.dat`、`identity.json` 不存在，`config.json` 中也没有 `upload_key`；此时 collector 记录 `skipped_not_logged_in`（`reason=missing upload_key`）并直接丢弃事件，不建队列。共享凭据机制本身仍成立，不能用"文件不存在"判定机制失效。
+
+### 6.4 collector 生命周期管理
+
+| 编号 | 优先级 | 要求 |
+| --- | --- | --- |
+| COL-01 | P0 | 检测既有 collector 路径、版本、架构和协议兼容性 |
+| COL-02 | P0 | 无需学生安装 Python 即可运行 Windows 发布版 collector.exe |
+| COL-03 | P0 | 部署到当前用户可写的稳定目录，支持中文和空格路径 |
+| COL-04 | P0 | 部署/更新前校验来源、文件完整性和版本；执行自检 |
+| COL-05 | P0 | 版本化部署，切换失败保留可用旧版；处理文件占用和权限不足 |
+| COL-06 | P0 | 重复初始化不反复复制、不产生多个冲突版本 |
+| COL-07 | P1 | 在线升级、手动选择可信离线包 |
+| COL-08 | P1 | 提供 macOS/Linux 对应产物和权限处理 |
+| COL-09 | P0 | 多部署方仲裁：与 VS Code 扩展共用 `%LOCALAPPDATA%\CourseMind` 时不得降级或覆盖更新的 collector |
+| COL-10 | P0 | 检测到本机 collector 版本高于插件自带版本时，保留现有版本并提示，不"回滚到匹配版本" |
+
+Windows 沿用既有 `%LOCALAPPDATA%\CourseMind` 约定（2026-10-20 复核：目录真实存在，固定含 `collector.exe`、`config.json`、`version.json`、`cache/`、`log-collector/`、`backups/`；`identity.json`、`auth.dat` 仅在登录后出现，当前本机为未登录状态故缺失）。`cache/` 内实际包含 `pending.json`（JSON 待上传队列）、`failed.jsonl`、`turn_state.json`、`collector-debug.jsonl`；`log-collector/` 内为 `collector.db`（SQLite）与 `collector.log`。两者用途不同（JSON 队列 vs 诊断库），不是同一能力的两种版本。不得依赖插件临时解压目录作为永久 Hook 路径。首版建议随插件附带采集器，降低课堂集中下载失败；包体积和更新频率需在实现时评估。
+
+**双部署仲裁（V1.2 新增，M0 必查，2026-10-20 核对完毕）**：本机 `version.json` 为 `0.2.9`；`coursemind-collect` 仓库 `client/dist/collector.exe` 与扩展内置 `extension/resources/runtime/win32-x64/collector.exe` 的 sha256 均与本机部署文件一致（`55dea0f9…`，9,015,003 B），即**二进制已入库且与部署产物一致**；仓库 `client/collect.py`（HEAD 2026-10-14）也已包含 CodeBuddy 回答提取（`enrich_codebuddy_stop`）。因此"仓库代码落后于部署产物"的旧结论不成立于当前 HEAD，真正需要约束的是**版本仲裁逻辑本身**：扩展侧 `runtimeDeployCore.planDeployment` 只比较版本字符串是否相等，**没有版本大小比较**，已部署 exe 的 sha256 也不复验，低版本内置包会覆盖高版本部署。IDEA 插件必须在部署前读 `version.json` 并做语义版本比较，低于现有版本时放弃写入，并在发布说明中登记版本对应关系（M0 报告 6.4 给出规则）。
+
+### 6.5 Hook 配置管理
+
+| 编号 | 优先级 | 要求 |
+| --- | --- | --- |
+| HOOK-01 | P0 | 对每种工具单独检测支持版本、配置文件、作用域和事件能力 |
+| HOOK-02 | P0 | 首版完成 CodeBuddy 适配：`%USERPROFILE%\.codebuddy\settings.json` 的 `hooks.UserPromptSubmit` / `hooks.Stop`，事件能力以目标版本实测为准 |
+| HOOK-03 | P0 | 修改前预览变更、备份原文件，保留无关设置及已有 Hook |
+| HOOK-04 | P0 | 幂等合并 CourseMind 条目；修复时不重复追加 |
+| HOOK-05 | P0 | 正确处理 Windows 命令引用与实际执行环境差异 |
+| HOOK-06 | P0 | JSON 损坏或并发修改时停止写入并说明原因，不整文件覆盖 |
+| HOOK-07 | P0 | 可单独移除本插件管理的条目；不删除其他工具和用户 Hook |
+| HOOK-08 | P1 | Claude Code 适配（`~/.claude/settings.json`，Git Bash 命令形态），不在首版范围 |
+| HOOK-09 | P0 | 同一 Hook 文件可能被 VS Code 扩展与第三方共用，写入前必须重新读取并只改受管条目 |
+| HOOK-10 | P1 | 只读检查 Trae `~/.trae-cn/hooks.json`，不写入、不接管 |
+
+**已核对的 CodeBuddy Hook 契约**（V1.2 依据实测与本机文件）：
+
+- 配置路径 `%USERPROFILE%\.codebuddy\settings.json`，键为 `hooks`，`UserPromptSubmit` 与 `Stop` 均为数组；每条为 `{ hooks: [ { type: "command", command: '"C:/…/collector.exe" --source codebuddy', timeout: 10 } ] }`，**不需要 matcher**（该文件与 `~/.claude/settings.json` 结构同族，可复用同一合并算法，但 source 与命令形态必须区分）。
+- 该文件是多方共享文件：本机同一文件中已存在第三方工具写入的 `SessionEnd` 条目。合并算法必须保留所有非受管事件与命令，只处理 CourseMind 自己的两个事件。
+- CodeBuddy 的 Hook 由 CodeBuddy 插件自己派发（`hook_event_name`、`prompt`、`session_id`、`transcript_path`、`cwd`、`generation_id`、`model`、`agent_type`、`client`、`version`），因此 IDEA 插件不需要、也不应该自行监听对话。
+- **已实测确认（2026-10-19）**：IDEA 内 CodeBuddy 插件会执行该文件中的 Hook。学生在 IDEA 内提问后，采集记录出现在 Trae Code 中 CourseMind 扩展的会话列表里，说明"IDEA 触发 → 共享 collector → 服务端 → 任一 IDE 面板可读"整条链路成立。因此 IDEA 插件不需要为采集单独做适配层，只需要保证 Hook 条目存在、collector 可用、状态可读。
+- 由此推出的职责边界：条目写入方目前是 Trae/VS Code 版 CourseMind 扩展；若学生只装 IDEA + CodeBuddy、未装该扩展，`settings.json` 中不会有 CourseMind 条目，采集不会发生。**IDEA 插件必须能独立写入该条目**（P0），并按 HOOK-09 与扩展保持同一识别口径，避免双写重复。
+- 待补：`client` 字段在两个宿主中是否取值不同（本机 CodeBuddy IDE 为 `CodeBuddyIDE`）尚未核实。若同名，则不能声称能区分"IDEA 内"与"CodeBuddy IDE"来源，只能区分 source（`codebuddy`）。
+
+Hook 命令不携带长期凭据。工具尚未安装时允许跳过并保留待配置状态。全局配置影响外部终端时必须说明；项目级配置不应意外进入 Git，凭据不得写入项目目录。配置恢复需比较当前文件，不直接以旧备份覆盖用户后续修改。CodeBuddy 的 Hooks 开关若为账号级状态，插件无法代为启用，必须如实提示。
+
+### 6.6 采集与上传
+
+| 编号 | 优先级 | 要求 |
+| --- | --- | --- |
+| DATA-01 | P0 | 复用现有事件/会话协议，保留来源、会话、事件和时间信息 |
+| DATA-02 | P0 | 明确提示词、回复及会话增量的获取方式，区分“事件收到”和“内容完整” |
+| DATA-03 | P0 | 网络不可用时持久化排队，恢复后有界重试 |
+| DATA-04 | P0 | 采用至少一次提交＋服务端幂等去重，重启后仍有效 |
+| DATA-05 | P0 | 按身份和服务器隔离队列，限制大小、保留期限和单条体积 |
+| DATA-06 | P0 | 暂停后不接收新的采集内容；既有队列默认停止发送，恢复后续传 |
+| DATA-07 | P0 | Hook 失败不阻断 AI 主流程：collector 始终 exit 0 并在超时前返回；CodeBuddy 为 fail-closed，Hook 报错会拦截学生提问 |
+| DATA-08 | P1 | 提供失败条目数量、重试和清理操作 |
+
+来源字段需同时区分 AI 工具（如 codebuddy）与接入客户端（如 idea），不能将同一会话仅因从不同 IDE 进入就视为不同内容。不得依赖文件路径或触发时间单独去重；服务端已有唯一键 `(machine_id, session_id, turn_seq, record_type)`，共享 collector 与共享 `machine_id` 使其天然覆盖多 IDE 重复事件。
+
+**CodeBuddy 内容完整性（V1.2 补充，直接影响 DATA-02；2026-10-20 修正）**：CodeBuddy 的 `Stop` 事件**不保证携带 AI 回答正文**（实测多数为空，但 2026-10-20 19:29 本机有一条 `last_assistant_message_length=84`，说明部分宿主/版本会带短正文，不能依赖）。完整回答需从 `transcript_path` 指向的 `index.json` 取 `generation_id` 对应 request 的最后一条 `role=assistant` 消息 id，再读同目录 `messages/<id>.json`，其 `message` 字段是**字符串化 JSON**，需二次解析并拼接 `type=text` 块（丢弃 `type=reasoning`）。实测存在"Stop 触发早于消息落盘约 27ms"的时序竞态，且 `isComplete` 不会随流式结束立即翻转，不能作为唯一判据；需轮询（约 200ms 间隔、上限 3.6s，Hook `timeout` 为 10s）并在超时后标记不完整。**已核对（2026-10-20）**：仓库 `client/collect.py`（HEAD `dab28be`，2026-10-14）第 170–216 行已实现 `enrich_codebuddy_stop()`，并在 `main()` 中仅对 `source == "codebuddy"` 的 `Stop` 调用（552–556 行），丢弃 `reasoning` 块、以 `generation_id` 匹配 request；与部署版 0.2.9 的行为一致。原"能力只存在于已部署产物"的判断已过时。结论：IDEA 插件不得自行解析 transcript，也不得把"事件收到"显示为"内容完整"；打包基线取仓库内二进制产物（DEV-19）。
+
+排队上限建议初值为 100 MB、7 天，达到上限时停止新增持久化并提示，不静默覆盖；最终数值随真实对话规模调整。清理时明确说明删除未上传数据的后果。
+
+### 6.7 工作台入口
+
+P0：提供“打开学生工作台”按钮，通过一次性票据完成免登录跳转。工作台沿用已有页面和权限体系，不在 IDEA 中重复开发文档提交、对话详情及消息中心。
+
+**V1.2 核对结论**：截至本文修订，服务端**没有**票据兑换接口。`docs/plans/学生工作台与插件免登录跳转方案.md` 规划的 `POST /api/v1/student/web-handoff`、`/web-handoff/exchange`、`/student/web/*` 均未实现，VS Code 扩展的 `openStudentDashboard` 目前是占位。因此该项是**服务端配套改造**，不是插件单方面能完成的功能；在服务端交付前，插件只能提供已认证的普通跳转，且必须在 UI 中说明"需在浏览器输入账号"，不得宣称免登录。
+
+P1：提供“我的 AI 对话”“我的项目”“消息”快捷入口，目标路径使用服务端白名单映射。不得允许任意 URL 接收登录票据。
+
+### 6.8 状态面板与诊断
+
+面板至少显示：当前用户与服务器、collector 版本、适配工具及 Hook 状态、采集开关、最近事件时间、最近上传成功时间、待上传/失败数量、最近错误。
+
+常用操作：登录/退出、打开工作台、初始化/修复、测试连接、检查配置、暂停/恢复、打开设置、导出脱敏诊断。
+
+状态至少区分：未配置、未登录、组件缺失、待验证、正常、暂停、网络异常、认证失效、配置冲突。不得把“已有 Hook 文件”直接显示为“运行正常”。
+
+区分采集入口（V1.2 新增）：面板应说明"当前 IDEA 项目是否有过采集事件"，而不是笼统显示"已接入"。判定依据是 collector 诊断日志中的 `hook_received`／`record_normalized`，不用 Hook 文件是否存在代替。
+
+现状限制（2026-10-20 复核）：`hook_received` 记录 `source`、`session_id`、`raw_keys` 与 `prompt/text_content/last_assistant_message` 的长度，`raw_keys` 中可见 `client`、`version`、`cwd`、`generation_id` 等键名，但**不记录 `client` 与 `cwd` 的值**；`record` 顶层含 `source`、`cwd`、`workspace_roots`，`client` 只存在于上传记录的 `raw` 中。因此"按当前项目路径归因"在**上传后无法回查**（待上传条目 `pending.json` 里仍有 `record.cwd`），需要 collector 增加诊断字段（DEV-20：`hook_received` 增加 `client`、`version`、`cwd` 的值）。在字段补齐前，面板只能显示"存在近期采集（source=codebuddy），无法区分入口与项目"，不得推断为"本 IDEA 项目已采集"。
+
+诊断包包含版本、配置来源、脱敏路径和错误码；不默认包含对话正文、Token、密码或完整请求头。导出前允许预览内容。
+
+### 6.9 升级、禁用与卸载
+
+插件、collector、Hook 配置格式和服务端协议分别管理版本，并公布兼容关系。升级应保留登录状态和配置，迁移有备份、失败可恢复；不得仅因插件升级就清空待上传队列。
+
+禁用/卸载 IDEA 插件未必清除全局 Hook 和共享 collector。必须提供显式“停用 IDEA 接入/清理 CourseMind 配置”入口，并说明实际作用域；全局 Hook 无法按 IDEA 区分时，不承诺只停止 IDEA 会话。共享组件仍被其他 IDE 使用时不得自动删除。
+
+Marketplace 更新用于分发插件包；外置 collector 的在线更新是独立能力，需单独校验、部署和回滚。
+
+## 7. 界面需求
+
+| 界面 | 内容 | 主要动作 |
+| --- | --- | --- |
+| 首次接入向导 | 采集说明、服务器、登录、环境检测、变更预览、测试结果 | 上一步、继续、跳过、应用、重试 |
+| CourseMind Tool Window | 身份、链路状态、最近采集/上传、队列和错误 | 打开工作台、修复、暂停 |
+| Settings / CourseMind | 服务器、工具适配、组件、配置作用域、日志 | 测试、保存、恢复、清理 |
+| 诊断窗口 | 检查项、预期值、实际值、解决建议 | 重试、复制脱敏摘要、导出 |
+
+界面使用中文，技术错误转成可执行提示。例如“采集器文件被占用，当前仍使用旧版；关闭相关进程后重试”，而非只显示异常堆栈。后台异常聚合提示，避免每次 Hook 失败都弹窗。
+
+## 8. 接口与数据契约
+
+以下为能力契约，不是已确认的 URL；实施时映射到现有服务端，不擅自另建同义接口。
+
+| 接口能力 | 请求要点 | 响应及异常 |
+| --- | --- | --- |
+| 连接/兼容检测 | 客户端类型、版本、协议版本 | 服务可达性、最低协议要求 |
+| 登录与身份读取 | 复用现有认证流程 | 身份、有效期、必要凭据 |
+| 凭据刷新/撤销 | 按实际认证协议 | 新有效期、失效/撤销状态 |
+| 采集提交 | 幂等键、会话、工具、客户端、时间、内容增量 | 已接收/重复/拒绝；批次需逐条确认 |
+| 工作台票据 | 有效身份、白名单目标 | 短时一次性票据及允许地址 |
+
+事件建议字段：schema_version、event_id、session_id、event_type、occurred_at、ai_tool、client_type、client_version、collector_version、内容或内容增量标识。实际字段名尽量沿用旧协议。项目标识尽量使用本地映射/受控标识，上传绝对路径须有明确用途和告知。
+
+重试规则：连接异常、超时、5xx采用退避及抖动；429遵循服务端重试提示；401/403暂停并提示认证/权限问题；格式错误等不可重试请求进入失败队列。各批次只有经服务端确认的条目才标记成功。
+
+### 8.1 已核对的实际端点（V1.2 新增）
+
+以下来自 `coursemind-collect` 服务端代码，可作为 M0 契约起点；响应统一为 `{code, message, data}`。
+
+| 端点 | 鉴权 | 用途 |
+| --- | --- | --- |
+| `POST /api/v1/student/login` | 无 | 学生登录，返回 `access_token` 与 `upload_key` |
+| `GET /api/v1/student/me` | 学生 JWT | 身份、班级等 |
+| `POST /api/v1/student/context` | 学生 JWT | 工作区、Git 仓库、分支、技术栈上报（项目归属） |
+| `GET /api/v1/student/me/stats`、`/me/leaderboard` | 学生 JWT | 本人统计与排行榜（可选用于面板） |
+| `POST /api/v1/records`、`/records/batch` | `X-Upload-Key` | 采集提交，服务端逐条幂等去重 |
+| `GET /health` | 无 | 连接检测 |
+
+IDEA 插件只需调用上表前半部分；`records` 由 collector 调用，插件不得重复上传。工作台票据接口尚不存在（见 6.7）。
+
+## 9. 兼容性与开发约束
+
+### 9.1 IDE 与 JDK
+
+最低支持目标为 IDEA 2023.3（233 分支），Java 17 字节码基线；IDEA 2026.2.3 为当前本地调试目标，尚不表示已验证兼容。兼容声明必须匹配实际测试结果。
+
+必须区分：运行 Gradle 的 JDK、读取目标 SDK 所需的 JDK、插件输出字节码版本、运行调试 IDEA 的 JBR。若直接依赖新版 SDK，Java 17 编译器可能无法读取其高版本 class；仅设置 targetCompatibility=17 不能解决，也不能保证未引用新 API。
+
+开发要求：保留旧平台兼容构建路径；本地可使用已安装 IDEA 调试；如果新版本地 SDK 与旧基线无法安全共用一个构建配置，应拆分开发调试配置与正式兼容构建，避免把本地便利等同于跨版本兼容。
+
+**当前工程实际状态（V1.2 核对；2026-10-20 已按 M0 拆分）**：本仓库是 JetBrains 官方模板改造而来。原状为 `gradle.properties` 声明 `platformType=IC`、`platformVersion=2023.3`、`pluginSinceBuild=233`，而 `build.gradle.kts` 写死 `intellijIdea("2026.2.3")` 并引入 `com.intellij.modules.ultimate` 测试依赖，两处矛盾。**M0 已改为剖面驱动**：`courseMindProfile=release`（默认）使用 `IC 2023.3` 平台、Java 17 toolchain 与 17 字节码、不引入 ultimate；`courseMindProfile=local` 使用 `local(<本机 IDEA 目录>)`、JDK 25 toolchain（读取 2026.2 平台的 class 文件）、并启用 ultimate 测试依赖。`pluginSinceBuild=233` 已通过 `pluginConfiguration.ideaVersion.sinceBuild` 写入产物。本机 JBR 实测为 **25.0.4**（不是 21），且自带 `javac` 与 `ct.sym`，可直接作为 toolchain 25 使用。
+
+构建注意：`gradle.properties` 中仍配置 `127.0.0.1:7897` 代理（2026-10-20 按决定保留，M0 未改动），课堂/CI 环境无此代理时会构建失败；现有 CI 通过 `sed -i '/^systemProp\.https\./d'` 在检出副本中删除。长期方案仍是改为可选或由 `gradle.properties.local` 覆盖，不能把个人代理设置作为仓库默认值（登记于 M0 报告 D-06）。
+
+### 9.2 验证矩阵
+
+| 维度 | 首版目标 | 验证要求 |
+| --- | --- | --- |
+| Windows x64 | P0 | 完整安装、登录、Hook、采集、跳转、升级 |
+| IDEA 2023.3 | P0 最低基线 | Plugin Verifier＋人工端到端 |
+| IDEA 2026.2.3 | P0 本地目标 | 实际 Build/JBR 核对后调试和端到端 |
+| 中间主版本 | 发布前选择代表版本 | Verifier；核心链路抽测 |
+| Community/Ultimate 对应产品 | 根据可获取版本分别核对 | 避免无必要的付费模块依赖 |
+| macOS Intel/Apple Silicon | P1 | 独立产物、权限及完整链路 |
+| Linux x64 | P1 | 独立产物、权限及完整链路 |
+| 其他 JetBrains IDE、WSL/远程开发 | P2 | 不纳入首版支持承诺 |
+
+Gradle distribution 沿用腾讯云镜像方向，普通依赖优先已验证的国内镜像，JetBrains 专用源保留官方。CI 使用实际可用的稳定源；锁定工具版本，不用浮动 latest 保证可复现构建。
+
+## 10. 非功能需求
+
+| 领域 | 要求及建议验收指标 |
+| --- | --- |
+| UI 响应 | 网络、文件解析、部署和进程调用不占用 UI 线程；操作立即显示进度，可取消长任务 |
+| Hook 时延 | 本地接收/排队为主，普通事件额外耗时 P95≤500ms。CodeBuddy 的 `UserPromptSubmit` 在请求发出前**同步执行**，失败即拦截提问（fail-closed），因此这里是硬约束而非建议：上传必须与 Hook 解耦（先落盘、后异步发送） |
+| 稳定性 | IDEA/collector 重启后已持久化队列可恢复；部分批次失败不重传成重复可见记录 |
+| 资源 | 空闲无忙轮询；建议插件增量内存≤100MB，实施时用固定场景测量 |
+| 并发 | 多窗口、多个 Hook 进程更新配置和队列时使用锁/事务及原子替换 |
+| 安全 | 凭据最小权限、日志脱敏、下载校验、配置文件权限限制；不执行服务端任意命令 |
+| 可维护性 | UI、认证、配置、Hook适配、组件部署分模块；协议和错误码有版本说明 |
+| 可观测性 | 日志有级别、大小/保留限制及关联 ID；不默认记录正文 |
+
+以上性能数值为建议目标，并非现有实现的测量结果。服务端 140 人、2000 人、2 万人容量属于整体平台容量规划，不以安装数推算插件或服务端吞吐。
+
+## 11. 采集范围与用户控制
+
+首次接入明确说明：采集哪些工具与会话、数据上传到哪里、用途和暂停方式。默认只采集已适配且授权范围内的 AI 对话，不扫描任意磁盘、不上传整个源码项目。
+
+登录前不得将无身份内容补归给后续登录者；退出后停止新内容接收与上传。共享账号电脑应提醒核对身份。跨 IDE 共享采集开关、身份和配置时必须展示影响范围，防止用户以为只影响当前 IDEA。
+
+## 12. 异常处理清单
+
+| 场景 | 预期行为 |
+| --- | --- |
+| 服务端离线 | 显示离线和队列量，有界重试，AI 工具继续运行 |
+| 凭据过期/撤销 | 暂停上传并引导重新认证，不转投其他身份 |
+| Hook JSON 损坏 | 不写入，提示文件和修复建议，保留原件 |
+| 用户同时编辑配置 | 检测变更，重新读取/提示冲突，不覆盖 |
+| 路径含中文空格 | 部署、Hook 调用和自检均通过 |
+| collector 被拦截/占用 | 显示具体原因，不虚报成功，不自动降低系统安全设置 |
+| 新版本不兼容 | 保留旧组件并提示，不破坏当前可用链路 |
+| 多 IDE 重复收到同一事件 | 服务端幂等处理，界面仅出现一条对应记录 |
+| 对话文件不存在/字段变化 | 记录适配错误，不声称已完整采集 |
+| 队列满/磁盘满 | 停止新增写入并提示，不使 IDE 或 AI 工具崩溃 |
+| 工作台票据过期 | 重新申请，不复用失败票据 |
+| 第三方工具同时写入 `settings.json` | 只改受管条目，其他事件与命令逐字保留 |
+| 本机 collector 版本高于插件自带 | 保留现有版本，提示版本差异，不覆盖 |
+| IDEA 内 CodeBuddy 不触发 Hook | 显示"该入口未产生事件"，不显示"已接入" |
+
+## 13. 验收用例
+
+| 编号 | 场景 | 通过标准 |
+| --- | --- | --- |
+| AC-01 | 干净 Windows 学生环境首次接入 | 无 Python，完成安装到真实采集全流程 |
+| AC-02 | 已有其他 Hook | 配置后原 Hook 仍有效，CourseMind 仅一份 |
+| AC-03 | 已有共享 collector | 正确复用/升级，不破坏其他 IDE |
+| AC-04 | 最低与本地目标 IDEA | 均可安装启动，核心链路通过，Verifier 无阻断问题 |
+| AC-05 | 中文及空格用户名/路径 | 部署与调用成功 |
+| AC-06 | IDEA 内 CodeBuddy 提问与回复 | 工作台显示归属正确、含完整 AI 回答的记录（不能只有提示词） |
+| AC-07 | 断网、重启、恢复 | 已入队数据可恢复上传，无可见重复 |
+| AC-08 | 账号A切至B、服务器切换 | A队列绝不归入B或新服务器 |
+| AC-09 | 暂停、退出与恢复 | 行为与界面说明一致，不偷偷发送队列 |
+| AC-10 | 多项目/IDE并发 | 配置和队列不损坏，同一事件不重复入库 |
+| AC-11 | 工作台免登录 | 浏览器无需再次输入凭据，票据不可重复兑换（依赖服务端交付） |
+| AC-12 | 配置损坏/并发修改 | 保留原文件，明确失败，恢复后可重试 |
+| AC-13 | 插件/collector升级失败 | 可继续使用原版本，无队列丢失 |
+| AC-14 | 清理接入 | 只清理选定管理项，保留其他 Hook 和仍在使用的共享组件 |
+| AC-15 | 诊断导出 | 不含 Token、密码、对话正文等默认排除内容 |
+| AC-16 | IDEA 与 CodeBuddy IDE 交替使用 | `~/.codebuddy/settings.json` 中 CourseMind 条目始终恰好一份，两边都能采集 |
+| AC-17 | 第三方工具共用 `settings.json` | 其 `SessionEnd` 等条目逐字保留，功能不受影响 |
+| AC-18 | 过渡期 Trae Code 仍在用 | 安装 IDEA 插件后 Trae 采集不中断，collector 未被降级 |
+
+真实端到端验收必须使用测试账号、实际服务端和至少一段真实 AI 会话；模拟 Hook 成功不能替代 AC-06。AC-06 的采集侧前提已验证（部署版 0.2.9 与仓库 `client/collect.py` 均能取到 CodeBuddy 回答正文），验收时仍需确认该条 assistant 记录正文非空、归属账号正确。注意本机当前处于**未登录状态**（无 `auth.dat`、`config.json` 无 `upload_key`），此状态下 Hook 事件会记录 `hook_received` 后被丢弃（`skipped_not_logged_in`），因此"看到 Hook 触发"不等于"采集成功"。AC-01 的"一键接入"部分仍未被验证——现有成功案例中 Hook 条目由 Trae/VS Code 扩展写入，IDEA 插件独立写入尚未实现。
+
+## 14. 交付阶段与产物
+
+| 阶段 | 范围 | 完成条件 |
+| --- | --- | --- |
+| M0 基线核对 | 核对现有仓库、认证/采集协议、组件目录、CodeBuddy Hook（**IDEA 内触发已实测通过**） | 形成联调契约与可复现构建 |
+| M1 插件入口 | Tool Window、设置、连接检测、登录、身份 | 可正常配置并保存状态 |
+| M2 接入自动化 | collector部署（含双部署仲裁）、CodeBuddy Hook合并/备份/修复 | 干净环境一键接入通过 |
+| M3 采集闭环 | 复用共享凭据、持久化队列、去重、CodeBuddy 回答提取 | 端到端及异常用例通过；工作台票据依赖服务端 |
+| M4 发布准备 | 兼容验证、离线包、升级与清理、安装文档 | ZIP可分发，具备可审查的发布资料 |
+| M5 扩展 | Marketplace、跨IDE免重复登录、Claude Code、Trae 写入、macOS/Linux | 分项测试通过后扩大支持声明 |
+
+M3 的顺序修正（V1.2）：原计划把"凭据跨进程"当作待设计能力，实际已由共享 `auth.dat`＋`config.json` 解决，M3 的工作是**核对与复用**，剩余真实缺口是 CodeBuddy 回答提取（collector 侧）与工作台票据（服务端侧），两者都不在 IDEA 插件仓库内完成。
+
+每次交付包括：插件 ZIP、匹配 collector 产物/来源、版本兼容表、变更日志、安装与排障说明、验收记录。需要服务端改造时列入同一次联调交付，不标为插件独立完成。
+
+## 15. 发布与更新要求
+
+插件 ID 固定，版本单调递增；开发测试与正式版本分开管理。CI 至少完成编译打包、针对 Hook 合并/迁移/身份隔离等高风险逻辑的测试和目标 IDE 验证。构建通过不自动等同于市场发布授权。
+
+Marketplace 上架准备插件说明、图标、截图、支持范围、隐私说明、变更日志和支持入口。签名及市场发布凭据只保存在受控发布环境，不提交仓库。市场规则以发布时官方要求为准。
+
+## 16. 待核对事项与默认决策
+
+| 事项 | 本文处理 | 对实施的影响 |
+| --- | --- | --- |
+| 现有登录接口与Token生命周期 | 已核对：`/api/v1/student/login` 返回 `access_token`＋`upload_key` | M0 核对刷新/撤销语义即可 |
+| collector如何获得凭据 | 已解决：`config.json` 的 `upload_key`；JWT 存 `auth.dat`（DPAPI） | 由 P0 阻塞降为"复用并加写入协调" |
+| IDEA 内 CodeBuddy 插件是否执行 `~/.codebuddy/settings.json` 的 Hook | **已确认（2026-10-19 实测）**：IDEA 内提问被采集，记录在 Trae Code 的 CourseMind 面板可见 | 首版可行性成立；IDEA 插件只负责条目写入与状态 |
+| CodeBuddy IDE 与 IDEA 内插件是否共用同一 Hook 文件与开关 | 共用同一个文件已确认；Hooks 账号级开关在 IDEA 宿主中的表现仍需核对 | 决定 AC-16 与向导提示文案 |
+| 能否按入口（IDEA 内 / CodeBuddy IDE）区分记录 | 现有诊断与记录均不含 `client` 值，无法区分；需 collector 补字段 | 决定状态面板归因口径（DEV-20） |
+| collector 仓库源码与已部署产物版本 | `version.json` 0.2.9（SQLite 缓存）vs 仓库 `collect.py`（JSON 缓存） | 决定能否随插件打包部署 |
+| 现有队列与去重实现 | 已具备：`pending.json`／`failed.jsonl`、服务端唯一键 | 采集端只需补 CodeBuddy 回答提取 |
+| 工作台票据 | 服务端未实现，仅有方案文档 | AC-11 依赖服务端交付 |
+| 本地 IDEA 实际 Build 与 JBR | `build.gradle.kts` 指向 2026.2.3，`gradle.properties` 指向 2023.3/IC | 决定构建拆分（见 9.1） |
+| Trae 与其他工具支持 | 首版只读检查，不写入 | 不影响 CodeBuddy 闭环 |
+| macOS/Linux | P1建议范围 | 不以Windows产物承诺兼容 |
+| 自适应教学引导Hook | P2可选独立模块 | 不与基础采集发布绑定 |
+
+无需在写需求时逐项中断确认；开发按本文默认边界推进，M0核对发现差异后更新本文，涉及身份、采集范围和兼容承诺的变化必须明确记录。
+
+## 17. 官方技术参考
+
+- JetBrains Build Number Ranges：https://plugins.jetbrains.com/docs/intellij/build-number-ranges.html
+- JetBrains Persisting Sensitive Data：https://plugins.jetbrains.com/docs/intellij/persisting-sensitive-data.html
+- JetBrains Verifying Plugin Compatibility：https://plugins.jetbrains.com/docs/intellij/verifying-plugin-compatibility.html
+
+上述资料用于平台构建、凭据保存及兼容验证约束；具体 CourseMind 业务流程和优先级来自此前讨论及本文产品建议。
+
+## 18. 开发模块划分
+
+以下名称为建议的代码职责，不要求创建对应数量的 Gradle 子工程。首版采用单插件工程内分包即可，避免提前增加构建复杂度；实际命名以现有工程为准。
+
+| 模块 | 建议职责 | 不应混入的逻辑 |
+| --- | --- | --- |
+| ui | Tool Window、设置页、向导及操作入口 | Token持久化、直接编辑Hook |
+| config | 普通配置、配置来源、版本迁移 | 明文长期凭据 |
+| auth | 登录状态、凭据生命周期、身份变更协调 | 对话解析 |
+| api | 服务端请求、响应转换、超时及错误映射 | 弹窗与UI状态修改 |
+| collector | 环境检测、产物部署、自检、兼容检查 | 重新实现采集上传算法 |
+| hooks | 工具适配、变更计划、合并、备份和移除 | 修改用户无关配置 |
+| status | 汇总身份、环境、采集及上传状态 | 把单项成功推断成全链路成功 |
+| diagnostics | 脱敏日志、检查结果、诊断导出 | 默认导出会话正文 |
+
+账号、服务器及共享组件是应用级状态；当前项目路径、项目级Hook等才是项目级状态。多个项目窗口共用一个协调器，避免重复登录、部署和迁移。插件停用时释放监听器和后台任务；collector独立运行能力需另行验证。
+
+跨产品协调（V1.2 新增）：`auth.dat`、`config.json`、`collector.exe`、`~/.codebuddy/settings.json` 四类状态同时被 VS Code 扩展与 IDEA 插件访问。协调器必须假定"另一个写入方随时可能改动"，所有写入采用读-校验-原子替换，并在冲突时以文件实际内容为准；不得缓存跨进程状态作为判断依据。`hooks` 模块的合并算法与 VS Code 扩展同源，改动需两边同步，否则会重复追加受管条目。
+
+## 19. 可执行任务清单
+
+任务按依赖推进，可直接转为 Issue。状态统一为“待核对/待开发”，本文未将任何任务标为已完成。
+
+| 任务ID | 任务与交付物 | 依赖 | 完成标准 |
+| --- | --- | --- | --- |
+| DEV-01 | 审阅IDEA工程与现有扩展/collector，输出复用清单 | 无 | 明确已有实现、差异和待改造位置 |
+| DEV-02 | 梳理认证、采集和工作台接口，输出联调契约 | DEV-01 | 每项有实际端点、字段、错误及测试方法 |
+| DEV-03 | 核对本地Build/JBR及兼容构建配置 | DEV-01 | 本地调试与旧基线构建分别可执行 |
+| DEV-04 | 配置模型与迁移机制 | DEV-01 | 重启保留设置，旧配置可迁移，凭据不混存 |
+| DEV-05 | 服务端访问层及错误映射 | DEV-02 | 连通/超时/认证失败均有明确结果 |
+| DEV-06 | 登录、身份显示、退出及凭据存取 | DEV-04、05 | 真实账号登录，退出后停止使用旧身份 |
+| DEV-07 | 复用共享凭据存储（`auth.dat`＋`config.json`）并实现多写入方协调 | DEV-02、06 | 与 VS Code 扩展切换账号后身份一致，不互相覆盖 |
+| DEV-08 | collector检测、部署、完整性校验、自检与双部署仲裁 | DEV-01、04 | 干净及已有安装环境均可重复执行；不降级现有版本 |
+| DEV-09 | CodeBuddy Hook变更计划与配置适配（`~/.codebuddy/settings.json`） | DEV-01、08 | 预览、保留第三方条目、幂等合并、撤销均正确 |
+| DEV-10 | 首次向导及分步重试 | DEV-06、08、09 | 中途失败后能继续，不重复破坏配置 |
+| DEV-11 | 核对队列、增量和幂等能力；CodeBuddy 回答提取 | DEV-02、07、09 | 真实会话、断网恢复及重复提交通过；回答正文完整 |
+| DEV-12 | 本地状态读取及Tool Window | DEV-06、08、11 | 区分配置完成、事件收到和上传成功，并区分采集入口 |
+| DEV-13 | 工作台入口（票据接口未实现时降级为已认证跳转） | DEV-02、06 | 票据可用时免登录；不可用时明确提示，不宣称免登录 |
+| DEV-14 | 暂停、切换身份/服务器的协调流程 | DEV-07、11、12 | 旧队列不串账号、不改投服务器 |
+| DEV-15 | 配置清理、升级迁移与故障恢复 | DEV-08、09、14 | 保留其他Hook及共享组件，失败能恢复 |
+| DEV-16 | 诊断、错误提示及学生安装说明 | DEV-10、12、15 | 可定位常见故障，诊断无敏感信息 |
+| DEV-17 | 兼容验证、打包与首版验收 | DEV-03及其余P0任务 | AC-01至AC-18记录可查，产物版本一致 |
+| DEV-18 | 实测 IDEA 内 CodeBuddy 插件是否触发 Hook | 无 | **已核对（2026-10-19）**：IDEA 内提问采集成功，记录在 Trae Code 面板可见 |
+| DEV-20 | collector 诊断补充 `client`/`version`/`cwd`，支撑按项目与宿主归因（原仓库实现） | DEV-12 | 状态面板可判断"当前项目是否有过事件" |
+| DEV-19 | 核对 collector 已部署产物与仓库源码差异，确定打包基线 | DEV-01 | 明确版本号、缓存格式与升级路径 |
+
+DEV-11 及 DEV-13 的剩余部分需要在 `coursemind-collect` 的采集端/服务端实现，应在原仓库完成并标注对应版本。不要为了让 IDEA 面板显示成功而只实现模拟结果。DEV-09 的合并算法应与 VS Code 扩展的 `claudeHookMergeCore` 保持同一识别口径（"命令是否指向当前 collector"），否则两个写入方会互相判定对方为"非受管"而重复追加。
+
+## 20. 联调前必须确定的契约
+
+### 20.1 认证与跨进程凭据
+
+先检查现有扩展和collector如何保存、读取及刷新凭据。如果已有方案满足身份隔离与权限要求，优先沿用；否则补充设计后统一迁移，避免IDEA独自建立不兼容机制。
+
+**已核对结论**：`auth.dat`（DPAPI CurrentUser 加密的 JWT，含 serverId/studentId）＋`identity.json`（非敏感身份）＋`config.json`（`upload_key`）三者构成共享凭据面，collector 只用 `upload_key`。IDEA 插件沿用即可，无需设计新的跨进程凭据；本节剩余待定项收敛为：写入优先级与锁、服务器切换时三方一致性校验、`upload_key` 轮换后的更新时机。
+
+需确定：凭据种类与权限、保存位置和访问方式、过期判断、撤销/退出效果、并发刷新协调、跨IDE共享范围。未实现专用采集凭据时，不在文档或UI中声称该权限已被限制。
+
+### 20.2 collector与插件状态交换
+
+首版优先使用collector已有自检/状态能力；缺失时增加明确版本的本地状态契约。以下是逻辑字段建议，不代表已存在命令或文件：
+
+| 信息 | 用途 | 约束 |
+| --- | --- | --- |
+| collector版本、状态格式版本 | 判断可读取性 | 不支持版本明确报错 |
+| 当前服务器标识、身份标识 | 防止读取错误上下文 | 不存Token，界面可脱敏 |
+| 采集开关及作用域 | 解释暂停范围 | 与实际collector行为一致 |
+| 最近事件、最近确认上传时间 | 区分采集与发送 | 不把文件修改时间当成功时间 |
+| 待上传/失败数量 | 排障和积压提示 | 无法读取时显示未知而非0 |
+| 最近错误码及时间 | 提供解决建议 | 不写对话正文和敏感请求头 |
+
+状态写入须原子化，读取方容忍旧版本、部分缺失及短暂不可用。Hook触发式collector可能在两次事件之间没有运行进程，因此“没有常驻进程”不能单独判定故障。
+
+### 20.3 内容完整性与重复事件
+
+联调应回答：UserPromptSubmit携带哪些内容？Stop如何定位会话记录？会话文件是否即时完整？多次Stop如何提取新增内容？同一会话从多个入口触发时如何去重？会话压缩、文件轮换及工具升级如何处理？
+
+**CodeBuddy 已核对答案**（V1.2）：`UserPromptSubmit` 带 `prompt`；`Stop` 不带回答，只有 `transcript_path`；`transcript_path` 是目录索引 `index.json`（不是 Claude 的单个 `.jsonl`）；消息正文在 `messages/<id>.json` 的 `message` 字段（字符串化 JSON，需二次解析，丢弃 `reasoning` 块）；`Stop` 早于消息落盘约 27ms，`isComplete` 不可靠，需轮询至正文稳定。多次 Stop 按 `generation_id`/消息 id 判重，不以时间或路径判重。
+
+提交增量时明确游标何时推进：本地持久化成功与服务端确认成功分别记录，不能在发送失败时丢失增量。服务端去重的键应来自稳定事件或消息标识；缺少标识时制定可复现方案并用真实重放验证。
+
+### 20.4 免登录跳转
+
+确认现有接口是否已具备一次性兑换、短有效期、目标白名单和浏览器会话建立能力。若已有安全实现直接复用；缺失部分列为服务端任务。票据不写日志，打开浏览器失败时不展示长期凭据替代。
+
+## 21. 开发顺序与阶段演示
+
+1. **先跑通人工链路**：真实登录后手动配置collector/Hook，完成一段对话上传。该步骤验证协议和凭据，不作为学生最终操作流程。
+2. **再自动化接入**：把已验证的部署和Hook配置封装进向导，演示干净环境一次接入及重复执行。
+3. **补上可恢复行为**：验证断网、凭据失效、切换账号、多窗口和升级中断。
+4. **完成工作台与状态UI**：所有成功状态以真实结果驱动，最后执行兼容与发布验收。
+
+阶段演示A：在IDEA完成服务器配置、登录并显示真实身份。  
+阶段演示B：自动部署与 CodeBuddy Hook 合并成功，学生在 IDEA 内提问，真实会话在工作台可见。  
+阶段演示C：断网后恢复上传、账号切换隔离、免登录跳转成功（免登录以服务端票据交付为前提）。  
+阶段演示D：最低支持版本及本地目标版本验收通过，安装包可分发。
+
+## 22. 测试与发布完成标准
+
+测试重点放在容易造成数据错误的逻辑：Hook保留/合并/移除、配置迁移并发、账号与服务器隔离、队列确认及去重。简单UI不以机械覆盖率作为交付目标。
+
+首版交付必须同时满足：
+
+- 安装包在目标Windows环境可用，不要求学生单独安装Python或编辑JSON。
+- 学生完成一次引导即可采集真实提问与回复，工作台归属正确。
+- 所有P0需求有实现位置或验收证据；未完成项明确列出，不以“预计支持”替代。
+- 断网、重启、失效凭据、身份切换及配置冲突不造成串号、静默覆盖或已持久化数据无故丢失。
+- 插件版本、collector版本、服务端最低兼容版本和IDE验证范围记录在发布说明。
+- 保留人工端到端验收记录及已知限制；仓库构建成功与Marketplace上架分别记录。
+
+## 23. 提供给AI编程工具的实施任务说明
+
+以下任务说明可交给IDE中的AI编程工具执行。它要求先读取真实仓库再修改，不能以本文的建议名称假定代码已经存在。
+
+> 为CourseMind开发IntelliJ IDEA插件。先阅读仓库说明、构建配置及适用的AGENTS.md，核对现有功能；结合本需求文档完成DEV-01至DEV-03及DEV-18、DEV-19，输出复用清单、接口契约及构建验证结果。已确定最低支持目标为IDEA 2023.3，兼容构建采用Java 17基线，本地调试目标为已安装的IDEA 2026.2.3；注意当前工程 `gradle.properties`（2023.3/IC）与 `build.gradle.kts`（2026.2.3/Ultimate）互相矛盾，须先解决再编译，不直接用Java 17读取不兼容的新版SDK。随后按依赖实现登录、共享collector部署（含与VS Code扩展的双部署仲裁）、CodeBuddy Hook安全合并、真实采集、状态面板和工作台入口。首版AI工具是IDEA内的CodeBuddy（`~/.codebuddy/settings.json`），不是Claude Code；Claude Code 与 Trae 写入不属于首版。已实测确认 IDEA 内 CodeBuddy 会执行该文件的 Hook，采集链路可用（记录可在 Trae Code 的 CourseMind 面板看到），因此不要再验证"能否采集"，重点是把"由 IDEA 插件自己写入条目、无 Trae/VS Code 也能采集"做出来。复用coursemind-collect已有协议和实现（共享`auth.dat`/`config.json`/`identity.json`、`X-Upload-Key`上传、服务端幂等去重），禁止编造接口或用模拟成功替代真实链路。修改Hook须保留无关配置与第三方条目、备份并可幂等重试。凭据不写入Hook、日志或项目配置；队列按账号及服务器隔离。每个阶段提供实际修改、验证结果和未完成项。先完成Windows首版，其他平台与工具按后续迭代处理；不自动发布Marketplace。
+
+## 24. 修订记录
+
+| 版本 | 日期 | 内容 |
+| --- | --- | --- |
+| V1.0 | 2026-10-19 | 完整需求、范围、接口能力、兼容及验收用例 |
+| V1.1 | 2026-10-19 | 补充模块分工、17项开发任务、联调契约、实施顺序和AI实施任务说明 |
+| V1.2 | 2026-10-19 | 依据课程统一环境决策（IDEA＋CodeBuddy）与采集端实况重排首版边界：采集目标由 Claude Code 改为 CodeBuddy；共享凭据、collector 双部署仲裁、CodeBuddy 回答提取与 Hook 契约写入正文；工作台票据确认为服务端未实现；修正构建配置矛盾；新增 AC-16～AC-18 与 DEV-18、DEV-19 |
+| V1.2 附注 | 2026-10-19 | 实测确认：IDEA 内 CodeBuddy 会执行 `~/.codebuddy/settings.json` 的 Hook，采集记录在 Trae Code 的 CourseMind 面板可见（DEV-18 关闭，M0 该项通过）；同时确认部署版 0.2.9 可取 CodeBuddy 回答正文，而仓库源码不具备该能力。新增 DEV-20（诊断补 `client`/`version`/`cwd`） |
+| V1.2.1 | 2026-10-20 | M0 基线核对完成，报告见 `docs/CourseMind-IDEA-M0-Baseline.md`。修正事实：本机 IDE 为 `IU-262.10968.63`（JBR 25.0.4，非 2026.2.3/21）；`auth.dat`、`identity.json`、`upload_key` 是登录态产物，当前本机未登录；仓库 `client/collect.py` 已含 CodeBuddy 回答提取，二进制与部署产物 sha256 一致；`pending.json` 与 `collector.db` 用途不同；`Stop` 事件可能携带短正文。工程侧已拆分为 release/local 双构建剖面并接入 `pluginSinceBuild`。新增契约缺口登记：`upload_key` 为全局静态密钥、`machine_id` 取内网 IP、部署无版本大小比较与自检、凭据无跨进程写锁 |
