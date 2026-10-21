@@ -2,7 +2,7 @@
 
 日期：2026-10-21
 状态：功能与本机测试完成，实际服务联调及教室发布基线验收待完成。
-依据：[需求文档](CourseMind-IDEA-Requirements-V1.2.0.md)、[里程碑](CourseMind-IDEA-Milestones-V1.0.md)、[UI 原型](CourseMind-Plugin-UI.html)。
+依据：[需求文档](../requirements/Requirements-V1.2.0.md)、[里程碑](../planning/Milestones-V1.0.md)、[UI 原型](../design/UI.html)。
 
 ## 实现范围
 

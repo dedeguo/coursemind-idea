@@ -1,9 +1,9 @@
 # R1 UI 重整实施记录
 
-> 2026-10-21 基线变更说明：当前默认发布配置已改为 IDEA Ultimate 2025.1.3 / JDK 21 / since-build 251，输出仍为 Java 17 字节码。本文保留变更前的构建配置、命令与测试结果作为历史记录；IC 2023.3 / JDK 17 的成功结果不能证明新平台已通过测试。当前构建命令见 [README](../README.md#打包与安装)，验收以 [需求文档 V1.3.1](CourseMind-IDEA-Requirements-V1.2.0.md) 为准。
+> 2026-10-21 基线变更说明：当前默认发布配置已改为 IDEA Ultimate 2025.1.3 / JDK 21 / since-build 251，输出仍为 Java 17 字节码。本文保留变更前的构建配置、命令与测试结果作为历史记录；IC 2023.3 / JDK 17 的成功结果不能证明新平台已通过测试。当前构建命令见 [README](../../README.md#打包与安装)，验收以 [需求文档 V1.3.1](../requirements/Requirements-V1.2.0.md) 为准。
 
 日期：2026-10-21
-依据：[需求文档](CourseMind-IDEA-Requirements-V1.2.0.md)、[里程碑](CourseMind-IDEA-Milestones-V1.0.md)、[HTML 原型](CourseMind-Plugin-UI.html)。
+依据：[需求文档](../requirements/Requirements-V1.2.0.md)、[里程碑](../planning/Milestones-V1.0.md)、[HTML 原型](../design/UI.html)。
 
 状态：代码已实现，编译、自动化回归及离屏布局检查通过；实际 IDEA 交互和真实账号回归待验收。本记录不将 R2/R3/R4 标为完成。
 

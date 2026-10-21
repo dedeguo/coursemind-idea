@@ -30,7 +30,7 @@ jobs:
 
       # 仓库目前保留了本机代理，GitHub runner 无法访问该地址。
       # 只调整 CI 检出副本，不修改开发者的本地配置。
-      # 长期方案（代理改为可选、由 gradle.properties.local 覆盖）见 docs/CourseMind-IDEA-M0-Baseline.md 的 D-06。
+      # 长期方案（代理改为可选、由 gradle.properties.local 覆盖）见 docs/implementation/M0-Baseline.md 的 D-06。
       - name: Remove local proxy settings for CI
         run: sed -i '/^systemProp\.https\./d' gradle.properties
 

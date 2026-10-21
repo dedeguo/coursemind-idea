@@ -2,8 +2,8 @@
 
 版本：V1.0
 日期：2026-10-21
-需求基线：[IDEA 需求文档（正文 V1.3.1）](CourseMind-IDEA-Requirements-V1.2.0.md)
-UI 基线：[CourseMind-Plugin-UI.html](CourseMind-Plugin-UI.html)
+需求基线：[IDEA 需求文档（正文 V1.3.1）](../requirements/Requirements-V1.2.0.md)
+UI 基线：[UI.html](../design/UI.html)
 
 ## 1. 计划原则与现状
 
@@ -132,12 +132,12 @@ UI 验收必须在实际 IDEA 中留存截图或演示记录，对照原型检�
 
 每阶段记录：完成范围、修改位置、验证环境、截图/测试结果、未完成项、下一阶段依赖。状态使用“待开发 / 开发中 / 已有实现待验证 / 验收通过 / 受阻”，不预填完成率。凭据、账号密码与对话正文不进入公开证据。
 
-课程、任务、项目绑定、成果提交和工作台免登录继续按[课程扩展文档](CourseMind-JetBrains-Course-Expansion-V1.0.md)另行联合设计，不纳入 R0～R5。
+课程、任务、项目绑定、成果提交和工作台免登录继续按[课程扩展文档](../requirements/Course-Expansion-V1.0.md)另行联合设计，不纳入 R0～R5。
 
-R1 实施及验证进展见 [UI 重整实施记录](CourseMind-IDEA-R1-UI-Implementation.md)。自动化检查与离屏预览已完成，真实账号及实际 IDE 交互回归待验收。
+R1 实施及验证进展见 [UI 重整实施记录](../implementation/R1-UI.md)。自动化检查与离屏预览已完成，真实账号及实际 IDE 交互回归待验收。
 
-R2 实施、71 项 IDEA 测试、216 项采集端扩展测试及配套安装包见[身份及双网络实施记录](CourseMind-IDEA-R2-Identity-Network-Implementation.md)。
+R2 实施、71 项 IDEA 测试、216 项采集端扩展测试及配套安装包见[身份及双网络实施记录](../implementation/R2-Identity-Network.md)。
 
-R3 统计、会话、状态及 91 项本机测试见[实施记录](CourseMind-IDEA-R3-Stats-Sessions-Implementation.md)。只生成 R3 local 包；IU 2025.1.3 SDK 下载未完成，发布基线及真实服务验收待补齐。
+R3 统计、会话、状态及 91 项本机测试见[实施记录](../implementation/R3-Stats-Sessions.md)。只生成 R3 local 包；IU 2025.1.3 SDK 下载未完成，发布基线及真实服务验收待补齐。
 
-R4 四工具配置、共享开关、collector 0.2.11、IU 2025.1.3 发布基线测试及安装包见[实施记录](CourseMind-IDEA-R4-Tools-Collection-Implementation.md)。真实工具采集、实际 IDEA UI 与多 IDE 联合验收待完成，尚不标记 R4 验收通过。
+R4 四工具配置、共享开关、collector 0.2.11、IU 2025.1.3 发布基线测试及安装包见[实施记录](../implementation/R4-Tools-Collection.md)。真实工具采集、实际 IDEA UI 与多 IDE 联合验收待完成，尚不标记 R4 验收通过。

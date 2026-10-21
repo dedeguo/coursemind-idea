@@ -150,7 +150,7 @@ CourseMind 可显示环境状态或指导入口，但首版不承担通用工具
 
 ## 十、与现有需求文档及命名的关系
 
-本方案承接[CourseMind IDEA 插件需求文档](CourseMind-IDEA-Requirements-V1.2.0.md) V1.3.0 移出的教学需求。当前基础版先完成 Trae Code 中 CourseMind 扩展主要功能及 HTML UI，包括身份、四类工具配置、采集管理和今日 AI 使用；本文的课程、任务、绑定、提交和免登录均在之后单独设计及排期。机房预配置、设置页管理 Hook 和无首次向导约束继续适用；本文以 CodeBuddy 描述课堂场景，不限制基础版其他工具支持范围。
+本方案承接[CourseMind IDEA 插件需求文档](Requirements-V1.2.0.md) V1.3.0 移出的教学需求。当前基础版先完成 Trae Code 中 CourseMind 扩展主要功能及 HTML UI，包括身份、四类工具配置、采集管理和今日 AI 使用；本文的课程、任务、绑定、提交和免登录均在之后单独设计及排期。机房预配置、设置页管理 Hook 和无首次向导约束继续适用；本文以 CodeBuddy 描述课堂场景，不限制基础版其他工具支持范围。
 
 后续可将对外定位调整为“CourseMind JetBrains 课程插件”。当前 coursemind-idea 仓库名、插件 ID 和发布身份可保持，是否更名另行评估，避免为扩大定位引入无必要的迁移。
 

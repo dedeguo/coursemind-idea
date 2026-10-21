@@ -8,14 +8,15 @@ CourseMind 的 IntelliJ IDEA 插件，基于 JetBrains 官方 IntelliJ Platform 
 
 相关文档：
 
-- [需求文档（正文 V1.3.1）](docs/CourseMind-IDEA-Requirements-V1.2.0.md)：功能范围、业务流程、接口依赖、验收标准与开发任务清单。
-- [R1 UI 重整实施记录](docs/CourseMind-IDEA-R1-UI-Implementation.md)：原生组件布局、主题与界面验证。
-- [课程扩展需求](docs/CourseMind-JetBrains-Course-Expansion-V1.0.md)：课程、任务、项目绑定、成果提交及工作台免登录，留待与服务端共同设计。
-- [R3 今日摘要、会话与状态](docs/CourseMind-IDEA-R3-Stats-Sessions-Implementation.md)：功能、测试、状态证据边界及本地包说明。
-- [R2 身份及双网络实施记录](docs/CourseMind-IDEA-R2-Identity-Network-Implementation.md)：配置迁移、改密、共享协议、测试及两个本地安装包。
-- [开发里程碑 V1.0](docs/CourseMind-IDEA-Milestones-V1.0.md)：现有功能基础、R0～R5 计划、UI 规则及阶段验收。
-- [界面设计原型](docs/CourseMind-Plugin-UI.html)：后续工具窗口与设置页开发依据。
-- [M0 基线核对报告](docs/CourseMind-IDEA-M0-Baseline.md)：复用清单、联调契约、构建结论、collector 产物核对与差异清单。
+- [文档索引](docs/README.md)：按需求、规划、设计和实施记录分类浏览。
+- [需求文档（正文 V1.3.1）](docs/requirements/Requirements-V1.2.0.md)：功能范围、业务流程、接口依赖、验收标准与开发任务清单。
+- [R1 UI 重整实施记录](docs/implementation/R1-UI.md)：原生组件布局、主题与界面验证。
+- [课程扩展需求](docs/requirements/Course-Expansion-V1.0.md)：课程、任务、项目绑定、成果提交及工作台免登录，留待与服务端共同设计。
+- [R3 今日摘要、会话与状态](docs/implementation/R3-Stats-Sessions.md)：功能、测试、状态证据边界及本地包说明。
+- [R2 身份及双网络实施记录](docs/implementation/R2-Identity-Network.md)：配置迁移、改密、共享协议、测试及两个本地安装包。
+- [开发里程碑 V1.0](docs/planning/Milestones-V1.0.md)：现有功能基础、R0～R5 计划、UI 规则及阶段验收。
+- [界面设计原型](docs/design/UI.html)：后续工具窗口与设置页开发依据。
+- [M0 基线核对报告](docs/implementation/M0-Baseline.md)：复用清单、联调契约、构建结论、collector 产物核对与差异清单。
 - [IntelliJ Platform 插件开发官方文档](https://plugins.jetbrains.com/docs/intellij/welcome.html)：JetBrains 官方的插件开发指南，含 SDK 配置、扩展点注册、UI 开发、测试与发布流程。
 - [IntelliJ Platform SDK 中文翻译](https://docs.namichong.com/intellij-platform-sdk/welcome.html)：上述官方文档的社区中文翻译（**非官方**），仅作阅读辅助，内容以官方英文版为准。
 
@@ -38,7 +39,7 @@ CourseMind 的 IntelliJ IDEA 插件，基于 JetBrains 官方 IntelliJ Platform 
 - 今日统计来自 `/api/v1/student/me/stats`；加载、空结果、请求失败、权限不足与登录过期分别显示。刷新失败可保留同一身份和服务器的旧数据并标注更新时间；换号或切换连接时清空旧统计，阻止旧请求回填。
 - 会话预览显示标题、来源、主题、轮次和活动时间；没有正文接口时明确提示“暂不提供对话正文”。
 - 个人最近同步缺少可归属证据时显示“未知”。本机共享上传日志不能用于判定当前学生“采集正常”，统计刷新时间也不作为上传时间。
-- 工具窗口按 [UI 原型](docs/CourseMind-Plugin-UI.html) 组织；支持窄窗口换行与滚动，修改密码和退出登录保持同一行。亮/暗主题、系统缩放及真实交互仍需在目标 IDEA 中验收。
+- 工具窗口按 [UI 原型](docs/design/UI.html) 组织；支持窄窗口换行与滚动，修改密码和退出登录保持同一行。亮/暗主题、系统缩放及真实交互仍需在目标 IDEA 中验收。
 - 当前仅接入 CodeBuddy Hook；Trae、Claude Code、WorkBuddy 的 IDEA 侧配置与真实共享采集开关属于 R4。
 
 ## 本地开发
@@ -213,10 +214,11 @@ java -version
 │   └── messages/                                 # 模板资源文本
 ├── src/test/                                      # CourseMind 业务/UI 回归、模板测试及数据
 ├── docs/
-│   ├── CourseMind-IDEA-Requirements-V1.2.0.md      # 当前需求
-│   ├── CourseMind-IDEA-Milestones-V1.0.md         # R0～R5 里程碑
-│   ├── CourseMind-Plugin-UI.html                  # UI 设计依据
-│   └── CourseMind-IDEA-R*-Implementation.md       # 分阶段实施与验证记录
+│   ├── README.md                                  # 文档索引
+│   ├── requirements/                              # 本期需求与课程扩展方案
+│   ├── planning/                                  # R0～R5 开发里程碑
+│   ├── design/                                    # HTML 界面原型
+│   └── implementation/                            # M0 基线及 R1～R4 实施验证记录
 ├── .run/                                          # IDEA 运行配置
 ├── .github/workflows/                             # 编译、测试与打包工作流
 ├── build.gradle.kts                               # 双剖面构建与平台依赖
@@ -266,7 +268,7 @@ release 剖面首次需要下载IU 2025.1.3 安装包，耗时取决于网络。
 
 ## 后续开发
 
-后续执行以 [R0～R5 开发里程碑](docs/CourseMind-IDEA-Milestones-V1.0.md) 为准；历史 M0～M2 记录保留，用于追溯已有基础。
+后续执行以 [R0～R5 开发里程碑](docs/planning/Milestones-V1.0.md) 为准；历史 M0～M2 记录保留，用于追溯已有基础。
 
 | 阶段 | 范围 | 当前状态 |
 | --- | --- | --- |
@@ -277,7 +279,7 @@ release 剖面首次需要下载IU 2025.1.3 安装包，耗时取决于网络。
 | R4 四工具与采集管理 | 补齐 Trae/Claude Code/WorkBuddy，批量配置、检测修复、共享采集开关 | 待开发 |
 | R5 联合验收与 Windows 交付 | IU 2025.1.3 兼容、跨 IDE/身份/队列、机房与安装文档 | 待完成 |
 
-课程、任务、项目绑定、成果提交及工作台免登录不纳入本期，见 [课程扩展需求](docs/CourseMind-JetBrains-Course-Expansion-V1.0.md)，需与服务端共同设计。
+课程、任务、项目绑定、成果提交及工作台免登录不纳入本期，见 [课程扩展需求](docs/requirements/Course-Expansion-V1.0.md)，需与服务端共同设计。
 
 ## 持续集成
 
@@ -309,4 +311,4 @@ CI 会在检出副本中移除仓库的本机 HTTPS 代理设置。此工作流�
 
 四工具勾选及数量、逐项检测与批量预览、配置/修复/移除、受管条目恢复已接入。共享采集开关由内置 collector 0.2.11 执行；暂停保留队列，旧客户端需先升级。Hook 操作为预览确认后的即时操作，设置取消不会撤销。
 
-IU 2025.1.3 发布基线编译、105 项测试及打包通过；配套采集端 53 项测试通过。真实四工具采集和实际 IDE UI 验收仍待完成，详见 [R4 实施记录](docs/CourseMind-IDEA-R4-Tools-Collection-Implementation.md)。本轮安装包：`build/distributions/coursemind-idea-0.3.0-r4.zip`。
+IU 2025.1.3 发布基线编译、105 项测试及打包通过；配套采集端 53 项测试通过。真实四工具采集和实际 IDE UI 验收仍待完成，详见 [R4 实施记录](docs/implementation/R4-Tools-Collection.md)。本轮安装包：`build/distributions/coursemind-idea-0.3.0-r4.zip`。

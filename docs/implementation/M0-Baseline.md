@@ -1,9 +1,9 @@
 # CourseMind IDEA 插件 M0 基线核对报告
 
-> 2026-10-21 基线变更说明：当前默认发布配置已改为 IDEA Ultimate 2025.1.3 / JDK 21 / since-build 251，输出仍为 Java 17 字节码。本文保留变更前的构建配置、命令与测试结果作为历史记录；IC 2023.3 / JDK 17 的成功结果不能证明新平台已通过测试。当前构建命令见 [README](../README.md#打包与安装)，验收以 [需求文档 V1.3.1](CourseMind-IDEA-Requirements-V1.2.0.md) 为准。
+> 2026-10-21 基线变更说明：当前默认发布配置已改为 IDEA Ultimate 2025.1.3 / JDK 21 / since-build 251，输出仍为 Java 17 字节码。本文保留变更前的构建配置、命令与测试结果作为历史记录；IC 2023.3 / JDK 17 的成功结果不能证明新平台已通过测试。当前构建命令见 [README](../../README.md#打包与安装)，验收以 [需求文档 V1.3.1](../requirements/Requirements-V1.2.0.md) 为准。
 
 核对日期：2026-10-20
-需求基线：`docs/CourseMind-IDEA-Requirements-V1.2.0.md`（下称"需求文档"）
+需求基线：`docs/requirements/Requirements-V1.2.0.md`（下称"需求文档"）
 范围：DEV-01、DEV-02、DEV-03、DEV-19（M0 基线核对）；DEV-18 已于 2026-10-19 关闭，不在本次范围
 结论性质说明：本报告区分**已核对事实**（附路径/命令/时间）、**推断**（标注依据）与**待验证**（给出验证方法）。不含 `upload_key`、JWT、`auth.dat` 密文等敏感值。
 

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 64 64" fill="none">
+  <title>CourseMind</title>
+  <desc>An open book supporting a connected mind, in violet, blue and teal.</desc>
+  <defs>
+    <linearGradient id="brand" x1="6" y1="32" x2="58" y2="32" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3820BC"/>
+      <stop offset=".5" stop-color="#1263AE"/>
+      <stop offset="1" stop-color="#00BEC5"/>
+    </linearGradient>
+    <mask id="mind-cutouts" maskUnits="userSpaceOnUse" x="14" y="10" width="36" height="40">
+      <path fill="#fff" d="M14 10h36v40H14z"/>
+      <path fill="#000" d="M32 12c-.5 7-1.7 9.6-7.5 10.8 5.8 1.2 7 3.8 7.5 10.1.5-6.3 1.7-8.9 7.5-10.1C33.7 21.6 32.5 19 32 12Z"/>
+      <path d="m22 28 10 8 10-8M32 36v13" stroke="#000" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="22" cy="28" r="2.8" fill="#000"/>
+      <circle cx="42" cy="28" r="2.8" fill="#000"/>
+      <circle cx="32" cy="36" r="3" fill="#000"/>
+    </mask>
+  </defs>
+  <g fill="url(#brand)">
+    <!-- Outer covers and separated pages stay legible at plugin-icon size. -->
+    <path d="m7 35 2.5-1.2-2.6 13.9c10.1-1.4 18.6 2.3 25.1 11.1 6.5-8.8 15-12.5 25.1-11.1l-2.6-13.9L57 35l5 18.5c-12.5-4.2-22.1-1.4-30 8.5C24.1 52.1 14.5 49.3 2 53.5L7 35Z"/>
+    <path d="M11 30.9c2.3-.2 4 .2 5.3 1 1.9 4.5 5.8 5.8 9.1 9.2 3.3 3.4 5.1 7.3 5.6 13.9C24.8 47.5 17.4 43.4 9.3 45L11 30.9Z"/>
+    <path d="M53 30.9c-2.3-.2-4 .2-5.3 1-1.9 4.5-5.8 5.8-9.1 9.2-3.3 3.4-5.1 7.3-5.6 13.9 6.2-7.5 13.6-11.6 21.7-10L53 30.9Z"/>
+    <path mask="url(#mind-cutouts)" d="M30.8 12c-3.3-.4-5.8.9-7.5 3.2-5.2.5-8.6 5.1-8.1 10.4-1.4 5.7 1.7 8.7 5.4 10.9C26.7 40.1 30 43 32 49c2-6 5.3-8.9 11.4-12.5 3.7-2.2 6.8-5.2 5.4-10.9.5-5.3-2.9-9.9-8.1-10.4-1.7-2.3-4.2-3.6-7.5-3.2-.9 1-1.2 3-1.2 5.3 0-2.3-.3-4.3-1.2-5.3Z"/>
+  </g>
+  <path d="M32 5v3.5m-9.2 1.9-2.5-2.5m20.9 2.5 2.5-2.5" stroke="url(#brand)" stroke-width="2.2" stroke-linecap="round"/>
+</svg>

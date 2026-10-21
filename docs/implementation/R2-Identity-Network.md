@@ -1,11 +1,11 @@
 # R2 身份及双网络配置实施记录
 
-> 2026-10-21 基线变更说明：当前默认发布配置已改为 IDEA Ultimate 2025.1.3 / JDK 21 / since-build 251，输出仍为 Java 17 字节码。本文保留变更前的构建配置、命令与测试结果作为历史记录；IC 2023.3 / JDK 17 的成功结果不能证明新平台已通过测试。当前构建命令见 [README](../README.md#打包与安装)，验收以 [需求文档 V1.3.1](CourseMind-IDEA-Requirements-V1.2.0.md) 为准。
+> 2026-10-21 基线变更说明：当前默认发布配置已改为 IDEA Ultimate 2025.1.3 / JDK 21 / since-build 251，输出仍为 Java 17 字节码。本文保留变更前的构建配置、命令与测试结果作为历史记录；IC 2023.3 / JDK 17 的成功结果不能证明新平台已通过测试。当前构建命令见 [README](../../README.md#打包与安装)，验收以 [需求文档 V1.3.1](../requirements/Requirements-V1.2.0.md) 为准。
 
 日期：2026-10-21
 状态：代码、自动化验证与本地安装包已完成；真实账号、校园网络、实际多 IDE 联调及 CUR 项最终验收待记录。
 
-依据：[本期需求](CourseMind-IDEA-Requirements-V1.2.0.md)、[开发里程碑](CourseMind-IDEA-Milestones-V1.0.md)、[UI 原型](CourseMind-Plugin-UI.html)。
+依据：[本期需求](../requirements/Requirements-V1.2.0.md)、[开发里程碑](../planning/Milestones-V1.0.md)、[UI 原型](../design/UI.html)。
 
 ## 已实现
 

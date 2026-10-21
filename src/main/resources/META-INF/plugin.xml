@@ -25,9 +25,11 @@
         </action>
     </actions>
     <extensions defaultExtensionNs="com.intellij">
+        <iconMapper mappingFile="CourseMindIconMappings.json"/>
         <toolWindow
                 id="CourseMind"
                 anchor="right"
+                icon="/icons/courseMind.svg"
                 factoryClass="top.chende.coursemind.toolwindow.CourseMindToolWindowFactory"/>
 
         <applicationService serviceImplementation="top.chende.coursemind.config.CourseMindSettings"/>

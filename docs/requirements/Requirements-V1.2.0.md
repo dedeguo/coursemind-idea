@@ -3,7 +3,7 @@
 版本：V1.3.1（教室发布基线调整）
 日期：2026-10-21
 目标仓库：`dedeguo/coursemind-idea`
-界面依据：[CourseMind-Plugin-UI.html](CourseMind-Plugin-UI.html)
+界面依据：[UI.html](../design/UI.html)
 功能参照：`coursemind-collect/extension` 中现有 CourseMind 扩展（运行于 Trae Code / VS Code / CodeBuddy 等宿主）
 
 ## 1. 本期目标与需求依据
@@ -191,16 +191,16 @@ CodeBuddy Stop 不保证携带完整回答；回答补全由 collector 处理 tr
 
 ## 9. 开发里程碑与当前基础
 
-目前已有登录、共享凭据、服务器单地址及连接测试、CodeBuddy Hook 配置、collector 部署实现。以上作为基础复用，完整新版验收仍待记录；修改密码、双网络默认配置、今日摘要及其他三类工具配置尚需补齐。当前界面未按 UI 设计组织，后续开发必须遵循 [CourseMind-Plugin-UI.html](CourseMind-Plugin-UI.html) 的结构与交互，并使用 IDEA 原生组件适配主题与缩放。
+目前已有登录、共享凭据、服务器单地址及连接测试、CodeBuddy Hook 配置、collector 部署实现。以上作为基础复用，完整新版验收仍待记录；修改密码、双网络默认配置、今日摘要及其他三类工具配置尚需补齐。当前界面未按 UI 设计组织，后续开发必须遵循 [UI.html](../design/UI.html) 的结构与交互，并使用 IDEA 原生组件适配主题与缩放。
 
-详细任务、源码依据、依赖、UI 规则及退出条件见[开发里程碑 V1.0](CourseMind-IDEA-Milestones-V1.0.md)。保留历史 M0/M1/M2 含义，后续采用 R0～R5，替代旧 S0～S4 执行计划。
+详细任务、源码依据、依赖、UI 规则及退出条件见[开发里程碑 V1.0](../planning/Milestones-V1.0.md)。保留历史 M0/M1/M2 含义，后续采用 R0～R5，替代旧 S0～S4 执行计划。
 
 | 里程碑 | 目标 | 当前状态 |
 | --- | --- | --- |
 | R0 既有功能基线确认 | 复用已开发能力，记录差异及回归依据 | 已有基础，待确认 |
-| R1 UI 重整与既有功能迁移 | 优先按原型重整登录、身份和设置页，已有操作无回归 | 已有实现待实际交互验收，见 [R1 记录](CourseMind-IDEA-R1-UI-Implementation.md) |
-| R2 身份及双网络配置补齐 | 默认双地址、配置迁移、修改密码、共享身份 | 已实现，见 [R2 记录](CourseMind-IDEA-R2-Identity-Network-Implementation.md)，真实环境待联调 |
-| R3 今日 AI 使用与真实采集状态 | 指标、主题、会话元信息预览、刷新及状态 | 功能及本机测试完成，发布基线/真实服务待验证，见 [R3 记录](CourseMind-IDEA-R3-Stats-Sessions-Implementation.md) |
+| R1 UI 重整与既有功能迁移 | 优先按原型重整登录、身份和设置页，已有操作无回归 | 已有实现待实际交互验收，见 [R1 记录](../implementation/R1-UI.md) |
+| R2 身份及双网络配置补齐 | 默认双地址、配置迁移、修改密码、共享身份 | 已实现，见 [R2 记录](../implementation/R2-Identity-Network.md)，真实环境待联调 |
+| R3 今日 AI 使用与真实采集状态 | 指标、主题、会话元信息预览、刷新及状态 | 功能及本机测试完成，发布基线/真实服务待验证，见 [R3 记录](../implementation/R3-Stats-Sessions.md) |
 | R4 四工具配置与采集管理完善 | 补齐三工具、批量配置、共享采集开关与检测修复 | 待开发 |
 | R5 联合验收与 Windows 交付 | CUR-01～14、机房、跨 IDE、兼容矩阵及 release ZIP | 待验证 |
 
@@ -228,7 +228,7 @@ CodeBuddy Stop 不保证携带完整回答；回答补全由 collector 处理 tr
 
 ## 11. 后续课程扩展文档
 
-课程、任务、项目绑定、成果提交及工作台免登录的具体需求、服务端联合设计事项和扩展验收标准统一整理至[CourseMind JetBrains 课程扩展方案](CourseMind-JetBrains-Course-Expansion-V1.0.md)第十二至十四节。该文档属于后续规划，不作为本期交付门槛；本期不实现空壳教学面板或占位任务流程。
+课程、任务、项目绑定、成果提交及工作台免登录的具体需求、服务端联合设计事项和扩展验收标准统一整理至[CourseMind JetBrains 课程扩展方案](Course-Expansion-V1.0.md)第十二至十四节。该文档属于后续规划，不作为本期交付门槛；本期不实现空壳教学面板或占位任务流程。
 
 ## 12. 修订记录
 
