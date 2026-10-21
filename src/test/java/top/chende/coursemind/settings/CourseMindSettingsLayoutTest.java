@@ -30,6 +30,25 @@ public class CourseMindSettingsLayoutTest extends BasePlatformTestCase {
         assertFalse("Layout verification must not create or deploy a runtime", Files.exists(root));
     }
 
+    public void testDefaultSelectionsCountAndZeroSelectionAreConsistent() throws Exception {
+        Path root=Path.of("build/tmp/r4-select-"+java.util.UUID.randomUUID()).toAbsolutePath();
+        CollectorHookPanel hooks=new CollectorHookPanel(RuntimePaths.of(root),root.resolve("settings.json"));
+        JPanel view=hooks.hookComponent();
+        JButton configure=findButton(view,"预览并配置选中的工具（2）"); assertNotNull(configure);
+        java.util.List<JCheckBox> boxes=new java.util.ArrayList<>(); collectBoxes(view,boxes);
+        assertEquals(4,boxes.size()); assertTrue(boxes.get(0).isSelected()); assertFalse(boxes.get(1).isSelected());
+        assertTrue(boxes.get(2).isSelected()); assertFalse(boxes.get(3).isSelected());
+        for (JCheckBox box:boxes) if (box.isSelected()) box.doClick();
+        assertEquals("预览并配置选中的工具（0）",configure.getText()); assertFalse(configure.isEnabled());
+        assertFalse(Files.exists(root));
+    }
+    private static void collectBoxes(Container parent, java.util.List<JCheckBox> boxes) {
+        for (Component child:parent.getComponents()) {
+            if (child instanceof JCheckBox box) boxes.add(box);
+            else if (child instanceof Container container) collectBoxes(container,boxes);
+        }
+    }
+
     private static void render(JComponent view, String name) throws Exception {
         for (int i = 0; i < 5; i++) layout(view);
         BufferedImage image = new BufferedImage(view.getWidth(), view.getHeight(), BufferedImage.TYPE_INT_RGB);

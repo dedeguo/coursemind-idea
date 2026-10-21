@@ -167,6 +167,10 @@ public final class CollectorService {
 
     /** 部署或升级；不做任何"降级"写入。 */
     public @NotNull DeployResult deploy() {
+        return top.chende.coursemind.runtime.SharedStateLock.run(paths, this::deployLocked);
+    }
+
+    private @NotNull DeployResult deployLocked() {
         State state = inspect();
         if (!state.canApply()) {
             return new DeployResult(state, false, null, "无需部署：" + state.message());
@@ -183,27 +187,42 @@ public final class CollectorService {
 
         Path exe = paths.collectorExe();
         Path backup = null;
+        byte[] previousBinary;
+        byte[] previousVersion;
+        try {
+            previousBinary = Files.exists(exe) ? Files.readAllBytes(exe) : null;
+            previousVersion = Files.exists(paths.versionFile()) ? Files.readAllBytes(paths.versionFile()) : null;
+        } catch (IOException e) { throw new CourseMindException("无法读取部署前快照，本次未修改", e); }
+        boolean replaced = false;
         try {
             Files.createDirectories(paths.root());
-            if (Files.isRegularFile(exe)) {
-                backup = backupExisting(exe);
-            }
-            Path temporary = paths.root().resolve("collector.exe." + Instant.now().toEpochMilli() + ".tmp");
-            Files.write(temporary, binary);
-            try {
-                Files.move(temporary, exe, StandardCopyOption.REPLACE_EXISTING);
-            } finally {
-                Files.deleteIfExists(temporary);
-            }
+            if (Files.isRegularFile(exe)) backup = backupExisting(exe);
+            State latest = inspect();
+            if (!java.util.Objects.equals(state.localVersion(), latest.localVersion())
+                    || !java.util.Objects.equals(state.localSha256(), latest.localSha256())
+                    || state.deployed() != latest.deployed())
+                throw new CourseMindException("采集客户端在预览后发生变化，请重新检测，不覆盖其他 IDE 的部署");
+            top.chende.coursemind.runtime.AtomicFiles.write(exe, binary);
+            replaced = true;
             writeVersionFile(source);
-        } catch (AccessDeniedException e) {
-            throw new CourseMindException("没有写入权限，无法部署采集器：" + paths.root(), e);
+            String check = runSelfCheck(exe);
+            if (!"自检通过".equals(check)) throw new IOException(check);
         } catch (IOException e) {
-            throw new CourseMindException("采集器文件被占用或写入失败，请关闭相关进程后重试", e);
+            if (replaced) {
+                try {
+                    if (previousBinary == null) Files.deleteIfExists(exe);
+                    else top.chende.coursemind.runtime.AtomicFiles.write(exe, previousBinary);
+                    if (previousVersion == null) Files.deleteIfExists(paths.versionFile());
+                    else top.chende.coursemind.runtime.AtomicFiles.write(paths.versionFile(), previousVersion);
+                } catch (IOException rollback) {
+                    e.addSuppressed(rollback);
+                    throw new CourseMindException("部署失败且自动恢复未完成；请使用备份恢复：" + backup + "。采集队列未修改", e);
+                }
+            }
+            throw new CourseMindException("部署失败，原客户端及版本信息已保留或恢复；采集队列未修改。请检查文件占用和目录权限", e);
         }
         pruneBackups();
-        String selfCheck = runSelfCheck(exe);
-        return new DeployResult(inspect(), true, backup, selfCheck);
+        return new DeployResult(inspect(), true, backup, "自检通过");
     }
 
     /** 轻量自检：空 stdin 调用一次，要求 5 秒内以 0 退出（采集器按约定永不阻断）。 */
@@ -253,7 +272,7 @@ public final class CollectorService {
         Files.createDirectories(paths.backupsDir());
         String version = readLocalVersion();
         String label = (version == null || version.isBlank()) ? "unknown" : version;
-        Path backup = paths.backupsDir().resolve("collector-" + label + "-" + TIMESTAMP.format(Instant.now()) + ".exe");
+        Path backup = paths.backupsDir().resolve("collector-" + label + "-" + TIMESTAMP.format(Instant.now()) + "-" + java.util.UUID.randomUUID() + ".exe");
         Files.copy(exe, backup, StandardCopyOption.REPLACE_EXISTING);
         return backup;
     }
@@ -289,15 +308,11 @@ public final class CollectorService {
                 json.toString().getBytes(StandardCharsets.UTF_8));
     }
 
+    /** Advisory only: environment detection must not mkdir or probe-write. Deployment validates actual access. */
     private boolean isWritable(@NotNull Path directory) {
-        try {
-            Files.createDirectories(directory);
-            Path probe = Files.createTempFile(directory, "coursemind-write-", ".tmp");
-            Files.deleteIfExists(probe);
-            return true;
-        } catch (IOException e) {
-            return false;
-        }
+        Path existing = directory.toAbsolutePath();
+        while (existing != null && !Files.exists(existing)) existing = existing.getParent();
+        return existing != null && Files.isDirectory(existing) && Files.isWritable(existing);
     }
 
     private static boolean isSupportedOs() {

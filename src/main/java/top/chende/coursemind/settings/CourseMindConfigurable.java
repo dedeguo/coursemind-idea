@@ -42,7 +42,7 @@ public final class CourseMindConfigurable implements Configurable {
     private final JRadioButton publicNetwork = new JRadioButton("公网", true);
     private final JRadioButton campusNetwork = new JRadioButton("校园内网");
     private final JTextArea migrationNotice = CourseMindUi.note("");
-    private final JBCheckBox collectEnabledCheckBox = new JBCheckBox("启用 AI 对话采集（当前仅保存本插件设置）");
+    private final JBCheckBox collectEnabledCheckBox = new JBCheckBox("启用 AI 对话采集（跨 IDE 共享）");
     private final JTextArea connectionStatus = CourseMindUi.message();
     private final JTextArea scopeLabel = CourseMindUi.note(" ");
     private final JTextArea effectiveServer = CourseMindUi.note(" ");
@@ -52,6 +52,7 @@ public final class CourseMindConfigurable implements Configurable {
     private JComponent panel;
     private CollectorHookPanel collectorHookPanel;
     private int uiGeneration;
+    private boolean initialCollectionEnabled = true;
 
     public CourseMindConfigurable() {
         testButton.addActionListener(event -> testConnection());
@@ -117,7 +118,7 @@ public final class CourseMindConfigurable implements Configurable {
                 CourseMindUi.section("AI 编程工具", collectorHookPanel.hookComponent()),
                 CourseMindUi.section("采集客户端", CourseMindUi.stack(12,
                         collectEnabledCheckBox,
-                        CourseMindUi.note("此开关尚未控制跨 IDE 共享采集，实际 Hook 与 collector 行为保持不变。"),
+                        CourseMindUi.note("应用后影响共享采集；需部署支持此开关的 collector 0.2.11 或更新版本。暂停不删除现有队列；已在执行的 Hook 可能继续完成。"),
                         collectorHookPanel.collectorComponent())),
                 CourseMindUi.stack(12, details, scopeLabel));
         body.setBorder(JBUI.Borders.empty(16));
@@ -135,7 +136,8 @@ public final class CourseMindConfigurable implements Configurable {
     }
     @Override public boolean isModified() {
         return !draft().equals(CourseMindSettings.getInstance().connection())
-                || collectEnabledCheckBox.isSelected() != CourseMindSettings.getInstance().isCollectEnabled();
+                || collectEnabledCheckBox.isSelected() != initialCollectionEnabled
+                || (collectorHookPanel != null && collectorHookPanel.selectionModified());
     }
     @Override public void apply() throws ConfigurationException {
         ConnectionProfile next = draft();
@@ -157,11 +159,15 @@ public final class CourseMindConfigurable implements Configurable {
         boolean collectEnabled = collectEnabledCheckBox.isSelected();
         AtomicReference<RuntimeException> failure = new AtomicReference<>();
         boolean completed = ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
-            try { AuthService.getInstance().applyConnection(next, collectEnabled); }
+            try { AuthService.getInstance().applyConnection(next, collectEnabled, initialCollectionEnabled); }
             catch (RuntimeException e) { failure.set(e); }
         }, "校验并保存 CourseMind 连接", false, null);
         if (!completed || failure.get() != null) throw new ConfigurationException(failure.get() == null ? "保存已取消" : failure.get().getMessage());
+        if (collectorHookPanel != null) collectorHookPanel.saveSelection();
         reset();
+    }
+    private boolean sharedCollectionEnabled() {
+        return new top.chende.coursemind.config.SharedConfigStore(AuthService.getInstance().runtimePaths()).collectionEnabled();
     }
     @Override public void reset() {
         CourseMindSettings settings = CourseMindSettings.getInstance();
@@ -170,7 +176,9 @@ public final class CourseMindConfigurable implements Configurable {
         ConnectionProfile p = settings.connection();
         serverField.setText(p.publicUrl()); campusField.setText(p.campusUrl());
         publicNetwork.setSelected(!"campus".equals(p.network())); campusNetwork.setSelected("campus".equals(p.network()));
-        collectEnabledCheckBox.setSelected(settings.isCollectEnabled());
+        initialCollectionEnabled = sharedCollectionEnabled();
+        collectEnabledCheckBox.setSelected(initialCollectionEnabled);
+        if (collectorHookPanel != null) collectorHookPanel.resetSelection();
         migrationNotice.setText(settings.migrationNotice()); migrationNotice.setVisible(!settings.migrationNotice().isBlank());
         connectionStatus.setText("");
         refreshScopeLabel();
@@ -231,6 +239,7 @@ public final class CourseMindConfigurable implements Configurable {
     public void disposeUIResources() {
         uiGeneration++;
         panel = null;
+        if (collectorHookPanel != null) collectorHookPanel.dispose();
         collectorHookPanel = null;
     }
 }

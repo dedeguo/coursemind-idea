@@ -17,6 +17,11 @@ import top.chende.coursemind.CourseMindException;
 
 import top.chende.coursemind.auth.AuthService;
 import top.chende.coursemind.auth.AuthSession;
+import top.chende.coursemind.api.ApiClient;
+import top.chende.coursemind.collector.CollectorStatusReader;
+import top.chende.coursemind.config.ConnectionProfile;
+import top.chende.coursemind.stats.StatsController;
+import top.chende.coursemind.stats.StudentStats;
 import top.chende.coursemind.config.CourseMindSettings;
 import top.chende.coursemind.settings.CourseMindConfigurable;
 
@@ -64,6 +69,11 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
     private final JTextArea identityMessage = CourseMindUi.message();
 
     private final PasswordChangePanel passwordChange = new PasswordChangePanel(this::changePassword);
+    private final UsagePanel usage = new UsagePanel(this::refreshAsync);
+    private final StatsController statsController;
+    private StatsController.Scope statsScope;
+    private long statusGeneration;
+    private boolean started;
     private boolean refreshRunning;
     private boolean refreshAgain;
     private boolean operationRunning;
@@ -75,6 +85,8 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
 
     CourseMindPanel(@NotNull Project project) {
         this.project = project;
+        statsController = new StatsController(task -> ApplicationManager.getApplication().executeOnPooledThread(task),
+                this::onEdt, usage::render, java.time.Clock.systemUTC());
         buildUi();
     }
 
@@ -149,7 +161,7 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
         JBLabel footerText = new JBLabel("CourseMind · 让学习过程看得见");
         footerText.setForeground(JBColor.GRAY);
         footer.add(footerText);
-        return CourseMindUi.stack(16, card, passwordChange.component(), footer);
+        return CourseMindUi.stack(16, card, passwordChange.component(), usage.component(), footer);
     }
 
     private @NotNull JPanel buildErrorCard() {
@@ -177,7 +189,7 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
         if (operationRunning || refreshRunning) { refreshAgain = true; return; }
         refreshRunning = true;
         statusLabel.setText("正在读取登录状态…");
-        cards.show(cardPanel, CARD_LOADING);
+        if (displayedSessionId == null) cards.show(cardPanel, CARD_LOADING);
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             AuthService.Snapshot snapshot;
             try {
@@ -196,7 +208,7 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
 
     void applySnapshot(@NotNull AuthService.Snapshot snapshot) {
         String nextSessionId = snapshot.session() == null ? null : snapshot.session().sessionId();
-        String nextKey = snapshot.state() + ":" + nextSessionId;
+        String nextKey = snapshot.state() + ":" + nextSessionId + ":" + CourseMindSettings.getInstance().connection();
         boolean changed = !nextKey.equals(displayedKey);
         if (changed) {
             passwordField.setText(""); passwordChange.close(); identityMessage.setText("");
@@ -204,6 +216,9 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
             identityName.setToolTipText(null); identityClass.setToolTipText(null); identityAvatar.setText("C");
         }
         displayedKey = nextKey; displayedSessionId = nextSessionId;
+        if (snapshot.state() != AuthService.State.LOGGED_IN) {
+            statsScope = null; statusGeneration++; statsController.bind(null); usage.clear();
+        }
         statusLabel.setVisible(snapshot.state() != AuthService.State.LOGGED_IN
                 && snapshot.state() != AuthService.State.LOGGED_OUT);
         switch (snapshot.state()) {
@@ -228,6 +243,8 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
                 statusLabel.setText("已登录");
                 renderSession(snapshot.session());
                 cards.show(cardPanel, CARD_IDENTITY);
+                if (snapshot.message() != null) identityMessage.setText(snapshot.message());
+                if (started && snapshot.session() != null) refreshSummary(snapshot.session());
             }
             case EXPIRED -> {
                 statusLabel.setText("登录已过期");
@@ -246,6 +263,37 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
                 cards.show(cardPanel, CARD_ERROR);
             }
         }
+    }
+
+    private void refreshSummary(AuthSession session) {
+        AuthService auth = AuthService.getInstance();
+        ConnectionProfile connection = CourseMindSettings.getInstance().connection();
+        StatsController.Scope scope = new StatsController.Scope(session.sessionId(), connection.serverId(),
+                connection.effectiveUrl(), session.profile().studentId());
+        if (!scope.equals(statsScope)) usage.clear();
+        statsScope = scope; statsController.bind(scope);
+        statsController.refresh(() -> {
+            try {
+                StudentStats result = new ApiClient(connection.effectiveUrl()).myStats(session.accessToken());
+                boolean current = auth.isCurrentSession(session, connection);
+                if (!current) onEdt(this::refreshAsync);
+                return new StatsController.Result(result, current);
+            } catch (RuntimeException e) {
+                if (!auth.isCurrentSession(session, connection)) {
+                    onEdt(this::refreshAsync); return new StatsController.Result(null, false);
+                }
+                throw e;
+            }
+        }, () -> ApplicationManager.getApplication().executeOnPooledThread(() -> auth.expireSession(session.sessionId())));
+        long ticket = ++statusGeneration;
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            CollectorStatusReader.Status status = new CollectorStatusReader().read(auth.runtimePaths(), connection,
+                    session, java.time.Clock.systemUTC());
+            onEdt(() -> {
+                if (ticket == statusGeneration && scope.equals(statsScope)
+                        && connection.equals(CourseMindSettings.getInstance().connection())) usage.status(status);
+            });
+        });
     }
 
     private void renderSession(AuthSession session) {
@@ -357,7 +405,8 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
         });
     }
     void start() {
-        AuthService.getInstance().subscribe(() -> onEdt(this::refreshAsync), this);
+        started = true;
+        AuthService.getInstance().subscribe(() -> onEdt(() -> applySnapshot(AuthService.getInstance().snapshot())), this);
         ApplicationManager.getApplication().getMessageBus().connect(this).subscribe(
                 com.intellij.openapi.application.ApplicationActivationListener.TOPIC,
                 new com.intellij.openapi.application.ApplicationActivationListener() {
@@ -367,7 +416,10 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
                 });
         refreshAsync();
     }
-    @Override public void dispose() { disposed = true; passwordField.setText(""); passwordChange.close(); }
+    @Override public void dispose() {
+        disposed = true; statusGeneration++; statsController.close(); usage.clear();
+        passwordField.setText(""); passwordChange.close();
+    }
     /** 工具窗口在模态对话框打开时也要能刷新，因此显式使用 {@link ModalityState#any()}。 */
     private void onEdt(@NotNull Runnable runnable) {
         ApplicationManager.getApplication().invokeLater(() -> { if (!disposed && !project.isDisposed()) runnable.run(); }, ModalityState.any());

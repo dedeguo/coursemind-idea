@@ -22,7 +22,7 @@ import java.util.function.Consumer;
  * 共享 collector 配置（%LOCALAPPDATA%\CourseMind\config.json）。
  *
  * <p>该文件同时被 VS Code 扩展与 collector 使用，IDEA 插件只允许改自己拥有的键
- * （server_url、server_id、identity_file、upload_key、classroom），其余字段逐字保留。
+ * （server_url、server_id、identity_file、upload_key、classroom、collection_enabled），其余字段保留其值。
  * 写入采用"读-校验-原子替换"：若期间文件被其他进程修改则放弃写入并提示重试。
  */
 public final class SharedConfigStore {
@@ -50,6 +50,18 @@ public final class SharedConfigStore {
         }
         String value = element.getAsString().trim();
         return value.isEmpty() ? Optional.empty() : Optional.of(ServerUrl.normalize(value));
+    }
+
+    /** Absent flag keeps legacy collection enabled; malformed flags are never silently accepted. */
+    public boolean collectionEnabled() {
+        JsonElement value = read().get("collection_enabled");
+        if (value == null) return true;
+        if (!value.isJsonPrimitive() || !value.getAsJsonPrimitive().isBoolean())
+            throw new CourseMindException("共享 collection_enabled 必须为布尔值");
+        return value.getAsBoolean();
+    }
+    public void setCollectionEnabled(boolean enabled) {
+        mutate(json -> json.addProperty("collection_enabled", enabled));
     }
 
     public boolean hasUploadKey() {

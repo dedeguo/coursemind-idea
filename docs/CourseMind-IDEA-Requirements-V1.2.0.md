@@ -200,7 +200,7 @@ CodeBuddy Stop 不保证携带完整回答；回答补全由 collector 处理 tr
 | R0 既有功能基线确认 | 复用已开发能力，记录差异及回归依据 | 已有基础，待确认 |
 | R1 UI 重整与既有功能迁移 | 优先按原型重整登录、身份和设置页，已有操作无回归 | 已有实现待实际交互验收，见 [R1 记录](CourseMind-IDEA-R1-UI-Implementation.md) |
 | R2 身份及双网络配置补齐 | 默认双地址、配置迁移、修改密码、共享身份 | 已实现，见 [R2 记录](CourseMind-IDEA-R2-Identity-Network-Implementation.md)，真实环境待联调 |
-| R3 今日 AI 使用与真实采集状态 | 指标、主题、会话元信息预览、刷新及状态 | 待开发 |
+| R3 今日 AI 使用与真实采集状态 | 指标、主题、会话元信息预览、刷新及状态 | 功能及本机测试完成，发布基线/真实服务待验证，见 [R3 记录](CourseMind-IDEA-R3-Stats-Sessions-Implementation.md) |
 | R4 四工具配置与采集管理完善 | 补齐三工具、批量配置、共享采集开关与检测修复 | 待开发 |
 | R5 联合验收与 Windows 交付 | CUR-01～14、机房、跨 IDE、兼容矩阵及 release ZIP | 待验证 |
 

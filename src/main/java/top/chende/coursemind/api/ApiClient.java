@@ -65,6 +65,11 @@ public final class ApiClient {
         return profileOf(data);
     }
 
+    public top.chende.coursemind.stats.StudentStats myStats(String accessToken) {
+        return top.chende.coursemind.stats.StudentStats.parse(request("GET",
+                "/api/v1/student/me/stats?range=today&recent_limit=5", accessToken, null));
+    }
+
     public @NotNull String changePassword(String accessToken, String oldPassword, String newPassword) {
         JsonObject body = new JsonObject();
         body.addProperty("old_password", oldPassword);

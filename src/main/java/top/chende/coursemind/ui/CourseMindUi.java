@@ -12,26 +12,53 @@ import java.awt.*;
 public final class CourseMindUi {
     private CourseMindUi() { }
 
-    /** GridBag keeps each row at its preferred height, even in a tall tool window. */
+    /** Rows grow with wrapped text and never compress when the viewport becomes narrow. */
     public static JPanel stack(int gap, JComponent... children) {
-        JPanel panel = new JPanel(new GridBagLayout());
-        GridBagConstraints c = new GridBagConstraints();
-        c.gridx = 0;
-        c.weightx = 1;
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.anchor = GridBagConstraints.NORTHWEST;
-        for (int i = 0; i < children.length; i++) {
-            c.gridy = i;
-            c.insets = JBUI.insets(i == 0 ? 0 : gap, 0, 0, 0);
-            panel.add(children[i], c);
-        }
-        c.gridy = children.length;
-        c.weighty = 1;
-        c.insets = JBUI.emptyInsets();
-        JPanel filler = new JPanel();
-        filler.setPreferredSize(new Dimension(0, 0));
-        panel.add(filler, c);
+        JPanel panel = new JPanel(new VerticalLayout(JBUI.scale(gap)));
+        for (JComponent child : children) panel.add(child);
         return panel;
+    }
+
+    private static final class VerticalLayout implements LayoutManager {
+        private final int gap;
+        private VerticalLayout(int gap) { this.gap = gap; }
+        @Override public void addLayoutComponent(String name, Component component) { }
+        @Override public void removeLayoutComponent(Component component) { }
+        @Override public Dimension minimumLayoutSize(Container parent) { return preferredLayoutSize(parent); }
+        @Override public Dimension preferredLayoutSize(Container parent) {
+            Insets insets = parent.getInsets();
+            int width = Math.max(0, parent.getWidth() - insets.left - insets.right);
+            int height = insets.top + insets.bottom, preferredWidth = 0, count = 0;
+            for (Component child : parent.getComponents()) {
+                if (!child.isVisible()) continue;
+                Dimension size = width > 0 ? measure(child, width) : child.getPreferredSize();
+                height += size.height + (count++ == 0 ? 0 : gap);
+                preferredWidth = Math.max(preferredWidth, size.width);
+            }
+            return new Dimension(preferredWidth + insets.left + insets.right, height);
+        }
+        @Override public void layoutContainer(Container parent) {
+            Insets insets = parent.getInsets();
+            int width = Math.max(0, parent.getWidth() - insets.left - insets.right), y = insets.top;
+            for (Component child : parent.getComponents()) {
+                if (!child.isVisible()) continue;
+                int height = measure(child, width).height;
+                child.setBounds(insets.left, y, width, height);
+                y += height + gap;
+            }
+        }
+    }
+
+    /** Propagate the available width before asking nested wrapping components for height. */
+    private static Dimension measure(Component component, int width) {
+        component.setSize(width, Math.max(1, component.getHeight()));
+        if (component instanceof Container container && !(container.getLayout() instanceof VerticalLayout)) {
+            container.doLayout();
+            for (Component child : container.getComponents()) {
+                if (child.isVisible()) measure(child, child.getWidth());
+            }
+        }
+        return component.getPreferredSize();
     }
 
     public static JBLabel badge(String text, int size, boolean round) {
@@ -161,6 +188,13 @@ public final class CourseMindUi {
 
     private static final class WidthTrackingPanel extends JPanel implements Scrollable {
         private WidthTrackingPanel() { super(new BorderLayout()); }
+        @Override public Dimension getPreferredSize() {
+            Insets insets = getInsets();
+            int width = getParent() instanceof JViewport viewport ? viewport.getExtentSize().width : getWidth();
+            if (getComponentCount() == 0 || width <= 0) return super.getPreferredSize();
+            Dimension size = measure(getComponent(0), Math.max(0, width - insets.left - insets.right));
+            return new Dimension(width, size.height + insets.top + insets.bottom);
+        }
         @Override public Dimension getMinimumSize() { return new Dimension(0, 0); }
         @Override public Dimension getPreferredScrollableViewportSize() { return getPreferredSize(); }
         @Override public int getScrollableUnitIncrement(Rectangle r, int orientation, int direction) {

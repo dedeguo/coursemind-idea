@@ -42,7 +42,7 @@ public final class CodeBuddyHooks {
     private static final int TIMEOUT_SECONDS = 10;
     private static final String LEGACY_COMMAND = "c:/ai-collector/collector.exe";
     private static final DateTimeFormatter BACKUP_SUFFIX =
-            DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneOffset.systemDefault());
+            DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS").withZone(ZoneOffset.systemDefault());
     private static final Pattern DUPLICATE_SLASH = Pattern.compile("/{2,}");
 
     public record Status(@NotNull Path file,
@@ -63,8 +63,16 @@ public final class CodeBuddyHooks {
 
     private final Path settingsFile;
     private final Path collectorExe;
+    private final String source;
 
     public CodeBuddyHooks(@NotNull Path settingsFile, @NotNull Path collectorExe) {
+        this(settingsFile, collectorExe, "codebuddy");
+    }
+
+    public CodeBuddyHooks(Path settingsFile, Path collectorExe, String source) {
+        if (!List.of("codebuddy", "workbuddy", "claude-code", "trae-code").contains(source))
+            throw new IllegalArgumentException("Unknown source");
+        this.source = source;
         this.settingsFile = settingsFile;
         this.collectorExe = collectorExe;
     }
@@ -78,7 +86,11 @@ public final class CodeBuddyHooks {
     }
 
     public @NotNull String command() {
-        return buildCommand(collectorExe);
+        String path = collectorExe.toAbsolutePath().toString().replace('\\', '/');
+        if (source.equals("claude-code")) path = path.replaceFirst("^([A-Za-z]):", "/$1");
+        if (source.equals("claude-code") && path.matches("^/[A-Za-z]/.*"))
+            path = "/" + Character.toLowerCase(path.charAt(1)) + path.substring(2);
+        return (source.equals("trae-code") ? "& " : "") + "\"" + path + "\" --source " + source;
     }
 
     public static @NotNull String buildCommand(@NotNull Path exe) {
@@ -142,7 +154,9 @@ public final class CodeBuddyHooks {
                 : removeManaged(source, normalizedCollectorPath());
         boolean changed = !target.equals(source);
         lines.add("文件：" + settingsFile);
-        lines.add("作用域：用户级共享，CodeBuddy IDE、IDEA 内 CodeBuddy 等入口同时生效");
+        lines.add("作用域：用户级共享，所选工具的各 IDE 入口同时生效");
+        if (apply) lines.add("执行命令：" + command());
+        lines.add("备份：原文件同目录 .coursemind-*.bak，保留最近 3 份；恢复只处理受管命令");
         if (!changed) {
             lines.add(apply ? "结果：CourseMind 条目已是最新，无需写入" : "结果：没有 CourseMind 条目，无需写入");
         } else {
@@ -165,15 +179,63 @@ public final class CodeBuddyHooks {
         return write(false);
     }
 
+    public @NotNull Path latestBackup() {
+        Path directory = settingsFile.toAbsolutePath().getParent();
+        String prefix = settingsFile.getFileName() + ".coursemind-";
+        try (Stream<Path> entries = Files.list(directory)) {
+            return entries.filter(Files::isRegularFile).filter(p -> p.getFileName().toString().startsWith(prefix)
+                    && p.getFileName().toString().endsWith(".bak")).max(Comparator.comparing(Path::getFileName))
+                    .orElseThrow(() -> new CourseMindException("没有可恢复的 CourseMind 备份"));
+        } catch (IOException e) { throw new CourseMindException("无法读取备份目录", e); }
+    }
+    private JsonObject restoreTarget(JsonObject current, Path backup) {
+        JsonObject original;
+        try { original = parseOrThrow(Files.readAllBytes(backup)); }
+        catch (IOException e) { throw new CourseMindException("无法读取 Hook 备份", e); }
+        JsonObject target = removeManaged(current, normalizedCollectorPath());
+        JsonObject originalHooks = hooksOf(original, false);
+        JsonObject targetHooks = hooksOf(target, true);
+        for (String event : MANAGED_EVENTS) {
+            JsonArray output = arrayOf(targetHooks, event);
+            for (JsonElement element : arrayOf(originalHooks, event)) {
+                if (!element.isJsonObject()) continue;
+                JsonObject group = element.getAsJsonObject().deepCopy();
+                if (!group.has("hooks") || !group.get("hooks").isJsonArray()) continue;
+                JsonArray owned = new JsonArray();
+                for (JsonElement command : group.getAsJsonArray("hooks")) {
+                    if (command.isJsonObject() && command.getAsJsonObject().has("command")
+                            && command.getAsJsonObject().get("command").isJsonPrimitive()
+                            && isManagedCommand(command.getAsJsonObject().get("command").getAsString(), normalizedCollectorPath())) owned.add(command);
+                }
+                if (!owned.isEmpty()) { group.add("hooks", owned); output.add(group); }
+            }
+            if (!output.isEmpty()) targetHooks.add(event, output);
+        }
+        if (targetHooks.isEmpty()) target.remove("hooks");
+        return target;
+    }
+    public @NotNull Plan planRestore(Path backup) {
+        JsonObject source = parseOrThrow(readBytes());
+        boolean changed = !restoreTarget(source, backup).equals(source);
+        return new Plan(changed, List.of("文件：" + settingsFile, "备份：" + backup,
+                "仅恢复该备份中的 CourseMind 受管命令；保留当前第三方命令及其他设置。",
+                changed ? "执行前再次备份当前文件" : "受管条目无需恢复"), changed, null);
+    }
+    public @NotNull ApplyResult restore(Path backup) {
+        byte[] before = readBytes();
+        return commit(before, parseOrThrow(before), restoreTarget(parseOrThrow(before), backup), "已恢复备份中的 CourseMind 受管条目");
+    }
+
     private @NotNull ApplyResult write(boolean add) {
         byte[] before = readBytes();
         JsonObject source = parseOrThrow(before);
         JsonObject target = add
                 ? merge(source, command(), normalizedCollectorPath())
                 : removeManaged(source, normalizedCollectorPath());
-        if (target.equals(source)) {
-            return new ApplyResult(false, null, add ? "已是最新，无需写入" : "没有 CourseMind 条目，无需移除");
-        }
+        return commit(before, source, target, add ? "已写入 CourseMind Hook 配置" : "已移除 CourseMind Hook 配置");
+    }
+    private ApplyResult commit(byte[] before, JsonObject source, JsonObject target, String message) {
+        if (target.equals(source)) return new ApplyResult(false, null, "无需写入");
         byte[] after = readBytes();
         if (!Arrays.equals(before, after)) {
             throw new CourseMindException("Hook 文件刚被其他程序修改，本次未写入，请重试");
@@ -182,6 +244,7 @@ public final class CodeBuddyHooks {
         if (before != null) {
             backup = backup();
         }
+        if (!Arrays.equals(before, readBytes())) throw new CourseMindException("备份期间 Hook 文件被修改，请重新预览");
         String content = new GsonBuilder().setPrettyPrinting().create().toJson(target) + "\n";
         try {
             AtomicFiles.write(settingsFile, content.getBytes(StandardCharsets.UTF_8));
@@ -189,7 +252,7 @@ public final class CodeBuddyHooks {
             throw new CourseMindException("无法写入 Hook 文件，请检查文件占用与权限：" + settingsFile, e);
         }
         pruneBackups();
-        return new ApplyResult(true, backup, add ? "已写入 CourseMind Hook 配置" : "已移除 CourseMind Hook 配置");
+        return new ApplyResult(true, backup, message);
     }
 
     /** 合并算法：只重建两个受管事件数组，其他键原样保留。 */
@@ -279,7 +342,7 @@ public final class CodeBuddyHooks {
         JsonObject hook = new JsonObject();
         hook.addProperty("type", "command");
         hook.addProperty("command", command);
-        hook.addProperty("timeout", TIMEOUT_SECONDS);
+        if (!command.endsWith("--source claude-code")) hook.addProperty("timeout", TIMEOUT_SECONDS);
         JsonArray hooks = new JsonArray();
         hooks.add(hook);
         JsonObject entry = new JsonObject();
@@ -293,14 +356,16 @@ public final class CodeBuddyHooks {
         }
         String normalized = normalizeCommand(command);
         String path = normalizeCommand(collectorPath);
-        if (!path.isEmpty() && normalized.contains(path)) {
+        if (!path.isEmpty() && (normalized.equals(path) || normalized.startsWith(path + " "))) {
             return true;
         }
-        return normalized.contains(LEGACY_COMMAND);
+        return normalized.equals(LEGACY_COMMAND) || normalized.startsWith(LEGACY_COMMAND + " ");
     }
 
     static @NotNull String normalizeCommand(@NotNull String value) {
         String normalized = value.trim().toLowerCase(Locale.ROOT).replace('\\', '/');
+        normalized = normalized.replaceFirst("^\\s*&\\s*", "").replace("\"", "");
+        normalized = normalized.replaceFirst("^/([a-z])/", "$1:/");
         return DUPLICATE_SLASH.matcher(normalized).replaceAll("/");
     }
 
@@ -442,7 +507,7 @@ public final class CodeBuddyHooks {
 
     private @NotNull Path backup() {
         Path backup = settingsFile.resolveSibling(
-                settingsFile.getFileName() + ".coursemind-" + BACKUP_SUFFIX.format(Instant.now()) + ".bak");
+                settingsFile.getFileName() + ".coursemind-" + BACKUP_SUFFIX.format(Instant.now()) + "-" + java.util.UUID.randomUUID() + ".bak");
         try {
             Files.createDirectories(settingsFile.toAbsolutePath().getParent());
             Files.copy(settingsFile, backup, StandardCopyOption.REPLACE_EXISTING);

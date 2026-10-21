@@ -1,12 +1,17 @@
 # CourseMind IDEA
 
-CourseMind 的 IntelliJ IDEA 插件，基于 JetBrains 官方 IntelliJ Platform Plugin Template 开发，用于探索学习过程采集与学生工作台在 IDE 中的集成。
+CourseMind 的 IntelliJ IDEA 插件，基于 JetBrains 官方 IntelliJ Platform Plugin Template 开发，用于学生身份管理、AI 编程过程采集配置，以及在 IDE 中查看今日 AI 使用摘要与会话信息。当前采集器运行环境以 Windows 为主。
 
-项目目前已有插件入口、基础界面、学生登录、共享凭据、服务器地址配置、collector 部署与 CodeBuddy Hook 管理。R1 界面重整及 R2 双网络配置、修改密码和共享身份保护已实现并通过自动化测试，真实环境待联调；下一阶段为 R3 今日 AI 使用，随后完善四工具及交付验收。课程、任务及工作台免登录属于后续扩展。
+截至 2026-10-21，R1 界面重整、R2 身份及双网络配置、R3 今日摘要/会话/只读采集状态已实现；已修复工具窗口缩窄后的文字裁切和统计说明截断。本机 IDEA 2026.2.3 / JDK 25 下完整 **92 项测试通过**，local 安装包已生成。
+
+发布目标仍为 **IDEA Ultimate 2025.1.3 / JDK 21**。本轮该 SDK 下载未完成，尚未完成 R3 的发布基线构建、Plugin Verifier 和真实服务端到端验收；local 测试结果不代表教室版本兼容验收通过。后续按 R4 四工具配置、R5 联合验收推进。
 
 相关文档：
 
 - [需求文档（正文 V1.3.1）](docs/CourseMind-IDEA-Requirements-V1.2.0.md)：功能范围、业务流程、接口依赖、验收标准与开发任务清单。
+- [R1 UI 重整实施记录](docs/CourseMind-IDEA-R1-UI-Implementation.md)：原生组件布局、主题与界面验证。
+- [课程扩展需求](docs/CourseMind-JetBrains-Course-Expansion-V1.0.md)：课程、任务、项目绑定、成果提交及工作台免登录，留待与服务端共同设计。
+- [R3 今日摘要、会话与状态](docs/CourseMind-IDEA-R3-Stats-Sessions-Implementation.md)：功能、测试、状态证据边界及本地包说明。
 - [R2 身份及双网络实施记录](docs/CourseMind-IDEA-R2-Identity-Network-Implementation.md)：配置迁移、改密、共享协议、测试及两个本地安装包。
 - [开发里程碑 V1.0](docs/CourseMind-IDEA-Milestones-V1.0.md)：现有功能基础、R0～R5 计划、UI 规则及阶段验收。
 - [界面设计原型](docs/CourseMind-Plugin-UI.html)：后续工具窗口与设置页开发依据。
@@ -20,10 +25,21 @@ CourseMind 的 IntelliJ IDEA 插件，基于 JetBrains 官方 IntelliJ Platform 
 | --- | --- |
 | `Tools → CourseMind：项目信息` | 显示当前项目的名称和目录；未打开项目时不可用 |
 | 右侧 `CourseMind` 工具窗口 | 卡片式登录与个人信息；显示姓名、学号和班级；支持内联修改密码、退出和焦点恢复时校验共享身份 |
-| `Settings → CourseMind` | 公网/校园双地址与默认值、网络选择、连接测试、采集开关及共享配置冲突提示 |
+| 工具窗口「今日 AI 使用」 | 日期、提问次数、会话数、平均轮次、多轮会话占比、主要主题和最近会话；支持折叠、手动刷新、登录后及焦点恢复时刷新 |
+| 会话与采集状态 | 内联查看真实会话元信息，暂不提供对话正文；只读显示配置、事件、队列与共享上传证据 |
+| `Settings → CourseMind` | 公网/校园双地址与默认值、网络选择、连接测试、采集偏好开关及共享配置冲突提示（真实共享暂停能力待 R4） |
 | `Settings → CourseMind → 采集器与 CodeBuddy Hook` | 检测/部署内置 collector（版本不降级、部署前备份、部署后自检）；检查/预览并应用/移除 CourseMind Hook 条目，保留第三方事件 |
 
-登录复用共享凭据：`auth.dat`（DPAPI CurrentUser）、`identity.json` 与 `config.json` 的 `upload_key`，与 VS Code/Trae 扩展使用同一套文件；插件不保存明文 Token。采集器部署与 Hook 配置已在 M2 接入；采集状态面板、队列与上传确认属于 M3，尚未接入。
+登录复用共享凭据：`auth.dat`（DPAPI CurrentUser）、`identity.json` 与 `config.json` 的 `upload_key`，与 VS Code/Trae 扩展使用同一套文件；插件不保存明文 Token。采集器部署与 Hook 配置已在 M2 接入；R3 已接入今日统计、会话元信息和只读状态；待上传仅统计明确匹配的账号/实例，无法归属的共享日志不作为个人同步成功证据。
+
+## 使用范围与状态说明
+
+- 首次使用内置公网地址 `http://8.140.216.36:29236`、校园网地址 `http://10.50.79.225:8000`，默认公网；两套地址均可修改并保存。升级迁移保留已有地址，首次使用优先采用有效的共享配置。
+- 今日统计来自 `/api/v1/student/me/stats`；加载、空结果、请求失败、权限不足与登录过期分别显示。刷新失败可保留同一身份和服务器的旧数据并标注更新时间；换号或切换连接时清空旧统计，阻止旧请求回填。
+- 会话预览显示标题、来源、主题、轮次和活动时间；没有正文接口时明确提示“暂不提供对话正文”。
+- 个人最近同步缺少可归属证据时显示“未知”。本机共享上传日志不能用于判定当前学生“采集正常”，统计刷新时间也不作为上传时间。
+- 工具窗口按 [UI 原型](docs/CourseMind-Plugin-UI.html) 组织；支持窄窗口换行与滚动，修改密码和退出登录保持同一行。亮/暗主题、系统缩放及真实交互仍需在目标 IDEA 中验收。
+- 当前仅接入 CodeBuddy Hook；Trae、Claude Code、WorkBuddy 的 IDEA 侧配置与真实共享采集开关属于 R4。
 
 ## 本地开发
 
@@ -51,7 +67,7 @@ local 剖面需要 `localIdePath` 指向 IDEA 安装目录，完整命令与 JDK
 2. 在 `Settings → Build, Execution, Deployment → Build Tools → Gradle` 中，使用项目的 Gradle Wrapper，并选择 Gradle 构建和运行方式；Gradle JVM 选 JDK 21 即可（release 剖面默认）。
 3. 等待 Gradle 同步完成。
 
-编译用的 JDK 由 `build.gradle.kts` 的 toolchain 决定（release=21、local=25），不再依赖命令行 `JAVA_HOME`；Gradle 需要能在本机发现对应版本 JDK，可用用户级 `org.gradle.java.installations.paths` 注册，或 `-PjavaVersion` 指定。
+编译用的 JDK 由 `build.gradle.kts` 的 toolchain 决定（release=21、local=25），不再依赖命令行 `JAVA_HOME`；Gradle 需要能在本机发现对应版本 JDK，可用用户级 `org.gradle.java.installations.paths` 或同名 `-P` 参数注册安装路径；`-PjavaVersion` 只选择 toolchain 版本，不注册安装路径。
 
 ```powershell
 java -version
@@ -83,7 +99,21 @@ java -version
 | `.\gradlew.bat buildPlugin` | 构建插件安装包 |
 | `.\gradlew.bat clean` | 清理构建产物 |
 
-现有测试主要来自官方模板，尚未覆盖 CourseMind 的业务功能。
+当前测试覆盖 API 与鉴权、配置迁移、共享身份与改密、collector/Hook、统计解析与异步隔离、状态证据及 UI 布局。2026-10-21 本机 local 剖面完整 92 项测试通过，失败、错误、跳过均为 0。
+
+窄窗口回归包含 720 → 300 → 560 → 280 → 720 连续缩放、滚动后调整宽度、1.5 倍字体和身份卡片宽窄切换，检查文字高度及滚动内容高度。离屏图位于 `build/reports/r1-ui/` 与 `build/reports/r3-ui/`，测试报告位于 `build/reports/tests/test/`。这些测试使用夹具数据，真实服务数据对照与机房验收仍待完成。
+
+复现本机完整测试并打包：
+
+```powershell
+.\gradlew.bat -PcourseMindProfile=local `
+  -PlocalIdePath=D:/dev-software/idea-2026.2.0.1.win `
+  -PjavaVersion=25 `
+  -Porg.gradle.java.installations.paths=D:/dev-software/idea-2026.2.0.1.win/jbr `
+  test buildPlugin --offline --console=plain
+```
+
+`--offline` 仅适用于依赖已缓存的环境；首次运行或缺少依赖时移除此参数。依赖缓存由 `GRADLE_USER_HOME` 决定，可用 `$env:GRADLE_USER_HOME` 查看；未设置时通常使用 `$HOME/.gradle`。更换缓存目录后可能需要重新下载依赖。
 
 ## 打包与安装
 
@@ -130,13 +160,21 @@ java -version
 
 内置 `collector.exe` 作为资源随插件打包；上述命令不负责重新编译采集程序。以上说明对应当前构建配置，不能仅凭已有 ZIP 确定当时命令的全部参数。
 
-### 安装 ZIP
+### 当前可用产物与安装
 
-两个 ZIP 均位于 `build/distributions/`，内含 `runtime/win32-x64/collector.exe`，体积约 9 MB。在目标 IDEA 的 `Settings → Plugins` 中打开齿轮菜单，选择 `Install Plugin from Disk…`，选中对应 ZIP 后按提示安装。
+本轮已生成的 R3 修复包（本机 IDEA 2026.2 调试用途）：
+
+- `build/distributions/coursemind-idea-0.3.0-local.zip`：Gradle local 剖面的输出。
+- `build/distributions/coursemind-idea-0.3.0-r3-ui-local.zip`：本轮窄窗口修复的副本，内容与上述包相同，内部版本仍为 `0.3.0-local`。
+- `build/distributions/coursemind-idea-0.3.0-r3-local.zip`：已同步为本轮 local 包。
+
+`-r3-ui-local` 和 `-r3-local` 是本地手工复制的文件名，Gradle 不会自动生成这些别名。本轮没有生成 R3 release 包；目录中旧的 `coursemind-idea-0.3.0.zip` 和 R2 别名不能当作本轮产物。
+
+安装包包含 Windows x64 的 `collector.exe`。在目标 IDEA 的 `Settings → Plugins` 中打开齿轮菜单，选择 `Install Plugin from Disk…`，选中对应 ZIP 后按提示安装。
 
 ### 两个产物的区别
 
-两者是**同一份源码**、同一个插件 ID（`top.chende.coursemind`）、内置同一个 `collector.exe 0.2.9`，差别只在"用哪套 IDEA SDK 编译"和版本标记：
+以下比较同一源码分别按两个剖面构建时的配置；不表示磁盘上已有的历史 ZIP 包含相同代码。两种剖面使用同一个插件 ID（`top.chende.coursemind`），collector 随源码资源打包：
 
 | 项 | `coursemind-idea-0.3.0.zip`（release） | `coursemind-idea-0.3.0-local.zip`（local） |
 | --- | --- | --- |
@@ -146,7 +184,7 @@ java -version
 | `since-build` | 251 | 251（仅声明，未在旧版验证） |
 | 测试依赖 | 引入 `com.intellij.modules.ultimate`（仅测试） | 测试编译时引入 ultimate（不进运行时） |
 | 用途 | 分发给学生/机房，用于 2025.1.3 兼容验证 | 只在本机 `runIde` 调试 |
-| 风险 | 最低基线仅构建级验证，尚需 Plugin Verifier 与端到端 | 按 2026.2 API 编译，装到 2025.1.3 可能出现 `NoSuchMethodError` |
+| 风险 | 本轮 SDK 未就绪，R3 构建、测试、Verifier 与端到端待验证 | 按 2026.2 API 编译，装到 2025.1.3 可能出现 `NoSuchMethodError` |
 
 使用注意：
 
@@ -160,15 +198,25 @@ java -version
 .
 ├── src/main/java/top/chende/coursemind/
 │   ├── actions/ShowProjectAction.java              # 项目信息菜单
-│   └── toolwindow/CourseMindToolWindowFactory.java # 工具窗口
+│   ├── api/                                      # HTTP 接口与鉴权
+│   ├── auth/                                     # 身份、改密与共享凭据
+│   ├── config/                                   # 双网络及共享配置
+│   ├── collector/                                # 部署与只读状态检测
+│   ├── hooks/                                    # CodeBuddy Hook 管理
+│   ├── stats/                                    # 统计模型、刷新与异步隔离
+│   ├── settings/                                 # 设置页
+│   ├── toolwindow/                               # 登录、身份、改密、摘要和会话
+│   └── ui/                                       # 主题与宽度自适应布局
 ├── src/main/kotlin/org/jetbrains/plugins/template/ # 保留的模板示例
 ├── src/main/resources/
 │   ├── META-INF/plugin.xml                        # 插件描述与扩展注册
 │   └── messages/                                 # 模板资源文本
-├── src/test/                                      # 模板测试与测试数据
+├── src/test/                                      # CourseMind 业务/UI 回归、模板测试及数据
 ├── docs/
-│   ├── CourseMind-IDEA-Requirements-V1.2.0.md     # 需求文档
-│   └── CourseMind-IDEA-M0-Baseline.md             # M0 基线核对报告
+│   ├── CourseMind-IDEA-Requirements-V1.2.0.md      # 当前需求
+│   ├── CourseMind-IDEA-Milestones-V1.0.md         # R0～R5 里程碑
+│   ├── CourseMind-Plugin-UI.html                  # UI 设计依据
+│   └── CourseMind-IDEA-R*-Implementation.md       # 分阶段实施与验证记录
 ├── .run/                                          # IDEA 运行配置
 ├── .github/workflows/                             # 编译、测试与打包工作流
 ├── build.gradle.kts                               # 双剖面构建与平台依赖
@@ -194,7 +242,7 @@ java -version
 
 ### 网络与代理
 
-当前仓库的 `gradle.properties` 配置了 HTTPS 代理 `127.0.0.1:7897`（M0 按决定保留）。如果本机没有对应代理服务，需删除或调整相关 `systemProp.https.*` 配置；个人代理配置建议放在 `gradle.properties.local` 或用户级 `$GRADLE_USER_HOME/gradle.properties`（默认 `~/.gradle/gradle.properties`）中维护。
+当前仓库的 `gradle.properties` 配置了 HTTPS 代理 `127.0.0.1:7897`（M0 按决定保留）。如果本机没有对应代理服务，需删除或调整相关 `systemProp.https.*` 配置；个人代理配置建议放在用户级 `$GRADLE_USER_HOME/gradle.properties`（默认 `~/.gradle/gradle.properties`）中维护。仓库自定义的 `gradle.properties.local` 用于构建剖面参数，不会自动加载其中的 `systemProp.*` 为 JVM 系统属性。
 
 Gradle Wrapper 使用腾讯镜像，依赖仓库还包含阿里云 Maven 镜像。遇到下载问题时，分别检查 `gradle/wrapper/gradle-wrapper.properties` 和 `settings.gradle.kts` 中的地址。
 
@@ -214,21 +262,22 @@ release 剖面使用版本坐标从 JetBrains 下载 IU 2025.1.3 平台，与本
 
 ### 首次构建卡在下载平台
 
-release 剖面首次需要下载IU 2025.1.3 安装包，耗时取决于网络。若长时间无进展，先用 `.\gradlew.bat --stop` 停止，再检查代理是否可用；`download.jetbrains.com` 可用而 Maven 归档路径不可用时，保持 `platformUseInstaller=true`（默认）。平台下载完成后同剖面构建为秒级。
+release 剖面首次需要下载IU 2025.1.3 安装包，耗时取决于网络。若长时间无进展，先用 `.\gradlew.bat --stop` 停止，再检查代理是否可用；`download.jetbrains.com` 可用而 Maven 归档路径不可用时，保持 `platformUseInstaller=true`（默认）。平台及相关依赖缓存完整后，可尝试同剖面的离线构建。
 
 ## 后续开发
 
-按需求文档第 14 章的里程碑推进，M0 已完成：
+后续执行以 [R0～R5 开发里程碑](docs/CourseMind-IDEA-Milestones-V1.0.md) 为准；历史 M0～M2 记录保留，用于追溯已有基础。
 
-| 阶段 | 范围 | 状态 |
+| 阶段 | 范围 | 当前状态 |
 | --- | --- | --- |
-| M0 基线核对 | 复用清单、联调契约、双剖面构建、collector 产物核对 | 已完成（2026-10-20） |
-| M1 插件入口 | Tool Window、设置页、连接检测、登录与身份 | 已完成（0.2.0，2026-10-20 本机验证） |
-| M2 接入自动化 | collector 部署（含双部署仲裁）、CodeBuddy Hook 合并/备份/修复 | 开发完成（0.3.0），待管理员预配置场景手工验证 |
-| M3 采集与教学闭环 | 共享凭据复用、队列与去重、状态面板、今日 AI 使用摘要（P0）、工作台入口 | 待开发 |
-| M4 发布准备 | 兼容验证、离线包、升级与清理、安装文档 | 待开发 |
+| R0 既有功能基线确认 | 登录、连接、共享身份、collector 与 CodeBuddy 链路 | 已有基础，真实环境回归待补齐 |
+| R1 UI 重整 | 按原型组织登录、身份、设置；主题与窄窗口布局 | 已实现，已补窄窗口裁切修复，实际交互待验收 |
+| R2 身份及双网络 | 默认双地址、迁移、改密、共享身份保护 | 已实现并通过自动化测试，真实环境待联调 |
+| R3 今日摘要、会话与状态 | 服务端统计、会话元信息、刷新隔离、只读状态 | 已实现；本机完整 92 项测试通过，发布基线及真实服务待验证 |
+| R4 四工具与采集管理 | 补齐 Trae/Claude Code/WorkBuddy，批量配置、检测修复、共享采集开关 | 待开发 |
+| R5 联合验收与 Windows 交付 | IU 2025.1.3 兼容、跨 IDE/身份/队列、机房与安装文档 | 待完成 |
 
-M1 起需要优先处理 M0 报告登记的四项契约缺口：凭据文件跨进程写锁、`upload_key` 授权模型、`machine_id` 稳定性、部署"不降级"判定。模板示例代码（`src/main/kotlin/org/jetbrains/plugins/template`）与模板测试计划在 M1 清理。
+课程、任务、项目绑定、成果提交及工作台免登录不纳入本期，见 [课程扩展需求](docs/CourseMind-JetBrains-Course-Expansion-V1.0.md)，需与服务端共同设计。
 
 ## 持续集成
 
@@ -255,3 +304,9 @@ CI 会在检出副本中移除仓库的本机 HTTPS 代理设置。此工作流�
 ## 许可证
 
 本仓库由 JetBrains 官方模板（Apache License 2.0）改造而来，但当前仓库中**没有** `LICENSE` 文件。若确定沿用 Apache License 2.0，需在发布前补入完整许可证文本并保留上游版权声明。官方模板的详细说明保留在 [Template_README.md](Template_README.md)。
+
+### R4 四工具与共享采集管理（2026-10-21）
+
+四工具勾选及数量、逐项检测与批量预览、配置/修复/移除、受管条目恢复已接入。共享采集开关由内置 collector 0.2.11 执行；暂停保留队列，旧客户端需先升级。Hook 操作为预览确认后的即时操作，设置取消不会撤销。
+
+IU 2025.1.3 发布基线编译、105 项测试及打包通过；配套采集端 53 项测试通过。真实四工具采集和实际 IDE UI 验收仍待完成，详见 [R4 实施记录](docs/CourseMind-IDEA-R4-Tools-Collection-Implementation.md)。本轮安装包：`build/distributions/coursemind-idea-0.3.0-r4.zip`。

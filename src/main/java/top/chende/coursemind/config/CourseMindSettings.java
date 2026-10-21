@@ -23,6 +23,7 @@ public final class CourseMindSettings implements PersistentStateComponent<Course
         public String network = "public";
         public boolean connectionSaved;
         public boolean collectEnabled = true;
+        public String selectedTools = "trae-code,codebuddy";
         public int configVersion;
         public String lastStudentNo = "";
         public String migrationNotice = "";
@@ -75,6 +76,8 @@ public final class CourseMindSettings implements PersistentStateComponent<Course
             state.connectionSaved = true;
         }
     }
+    public synchronized String selectedTools() { return state.selectedTools == null ? "trae-code,codebuddy" : state.selectedTools; }
+    public synchronized void setSelectedTools(String value) { state.selectedTools = value; }
     public synchronized boolean isCollectEnabled() { return state.collectEnabled; }
     public synchronized void setCollectEnabled(boolean value) { state.collectEnabled = value; }
     public synchronized String getLastStudentNo() { return state.lastStudentNo; }

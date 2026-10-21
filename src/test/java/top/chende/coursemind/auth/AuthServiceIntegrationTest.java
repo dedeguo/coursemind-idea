@@ -116,4 +116,38 @@ public class AuthServiceIntegrationTest {
         assertThrows(RuntimeException.class, () -> AuthService.validatePassword("old", "short"));
         assertThrows(RuntimeException.class, () -> AuthService.validatePassword("", "long-enough"));
     }
+    @Test public void staleStatistics401CannotDeleteRotatedSharedSession() throws Exception {
+        AuthSession old = login();
+        AuthSession next = service.changePassword(old.sessionId(), "password", "new-password");
+        service.expireSession(old.sessionId());
+        assertEquals(next.sessionId(), new SharedAuthStore(paths.authFile()).load().orElseThrow().sessionId());
+        service.expireSession(next.sessionId());
+        assertFalse(Files.exists(paths.authFile()));
+        assertFalse(new SharedConfigStore(paths).hasUploadKey());
+        assertEquals(AuthService.State.EXPIRED, service.snapshot().state());
+    }
+    @Test public void statisticsScopeCheckRejectsChangedEntryAndExternalSession() throws Exception {
+        AuthSession old = login();
+        assertTrue(service.isCurrentSession(old, settings.connection()));
+        assertFalse(service.isCurrentSession(old, new ConnectionProfile(publicUrl, campusUrl, "campus")));
+        new SharedAuthStore(paths.authFile()).save(new AuthSession("external-session", old.serverId(), old.accessToken(), old.profile(), old.updatedAt()));
+        assertFalse(service.isCurrentSession(old, settings.connection()));
+    }
+    @Test public void temporaryNetworkFailureKeepsVerifiedIdentityForStaleStatsDisplay() {
+        login(); publicServer.stop(0);
+        AuthService.Snapshot snapshot = service.refresh();
+        assertEquals(AuthService.State.LOGGED_IN, snapshot.state());
+        assertNotNull(snapshot.session()); assertTrue(snapshot.message().contains("网络"));
+    }
+    @Test public void sharedPauseIsSavedAndStaleSettingsCannotOverwriteOtherIde() throws Exception {
+        login();
+        service.applyConnection(settings.connection(), false, true);
+        var store = new SharedConfigStore(paths); assertFalse(store.collectionEnabled());
+        store.setCollectionEnabled(true);
+        byte[] before=Files.readAllBytes(paths.configFile());
+        assertThrows(RuntimeException.class, () -> service.applyConnection(settings.connection(), false, false));
+        assertArrayEquals(before, Files.readAllBytes(paths.configFile()));
+        assertTrue(store.collectionEnabled());
+    }
+
 }

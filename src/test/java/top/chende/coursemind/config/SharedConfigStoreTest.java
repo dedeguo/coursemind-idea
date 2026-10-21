@@ -32,6 +32,19 @@ public class SharedConfigStoreTest {
         return JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
     }
 
+    @Test public void sharedPauseSurvivesLoginAndPreservesUnknownFields() throws Exception {
+        Path root=folder.newFolder().toPath();
+        Files.writeString(root.resolve("config.json"), "{\"foreign\":42,\"upload_key\":\"fixture\"}");
+        assertTrue(store(root).collectionEnabled());
+        store(root).setCollectionEnabled(false);
+        store(root).applyLogin("https://example.test", "fixture", "room");
+        assertFalse(store(root).collectionEnabled()); assertEquals(42,read(root).get("foreign").getAsInt());
+        store(root).setCollectionEnabled(true); assertTrue(store(root).collectionEnabled());
+    }
+    @Test(expected=CourseMindException.class) public void malformedPauseIsNotSilentlyEnabled() throws Exception {
+        Path root=folder.newFolder().toPath(); Files.writeString(root.resolve("config.json"),"{\"collection_enabled\":\"false\"}");
+        store(root).collectionEnabled();
+    }
     @Test
     public void applyLoginCreatesMinimalConfigWithDefaults() throws IOException {
         Path root = folder.newFolder().toPath();

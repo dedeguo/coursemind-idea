@@ -27,6 +27,7 @@ public final class AuthService {
     private final SharedConfigStore configStore;
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
     private volatile Snapshot cached;
+    private volatile ConnectionProfile publishedConnection;
     public AuthService() { this(RuntimePaths.getDefault(), CourseMindSettings.getInstance()); }
     public AuthService(RuntimePaths paths, CourseMindSettings settings) {
         this.paths = paths; this.settings = settings;
@@ -40,7 +41,10 @@ public final class AuthService {
     }
     private Snapshot publish(Snapshot next) {
         Snapshot previous = cached; cached = next;
-        if (!fingerprint(previous).equals(fingerprint(next))) {
+        ConnectionProfile connection = settings.connection();
+        boolean connectionChanged = !connection.equals(publishedConnection);
+        publishedConnection = connection;
+        if (connectionChanged || !fingerprint(previous).equals(fingerprint(next))) {
             for (Runnable listener : listeners) {
                 try { listener.run(); } catch (RuntimeException ignored) { /* A closed view cannot undo committed auth. */ }
             }
@@ -73,11 +77,13 @@ public final class AuthService {
     }
     private Snapshot loadSnapshot(boolean verify) {
         ConnectionProfile connection = settings.connection();
+        AuthSession observed = null;
         if (ServerUrl.validate(connection.effectiveUrl()).isPresent()) return new Snapshot(State.NOT_CONFIGURED, null, "请先检查服务器地址");
         try {
             Optional<AuthSession> loaded = authStore.load();
             if (loaded.isEmpty()) return new Snapshot(State.LOGGED_OUT, null, null);
             AuthSession session = loaded.get();
+            observed = session;
             if (!connection.serverId().equals(ServerUrl.normalize(session.serverId()))) {
                 return new Snapshot(State.LOGGED_OUT, null, "共享登录属于其他服务实例；请确认连接设置后登录");
             }
@@ -96,9 +102,37 @@ public final class AuthService {
             }
             return new Snapshot(State.LOGGED_IN, session, null);
         } catch (ApiException e) {
+            if (!e.isAuthenticationFailure() && cached != null && cached.state() == State.LOGGED_IN
+                    && observed != null && cached.session() != null && cached.session().sessionId().equals(observed.sessionId())
+                    && settings.connection().equals(connection)) {
+                return new Snapshot(State.LOGGED_IN, cached.session(), "暂时无法重新校验身份，请检查网络；统计可能未更新");
+            }
             return new Snapshot(e.isAuthenticationFailure() ? State.EXPIRED : State.ERROR, null,
                     e.isAuthenticationFailure() ? "登录失效或权限不足，请重新登录" : "无法校验共享登录：" + e.getMessage());
         } catch (CourseMindException e) { return new Snapshot(State.ERROR, null, e.getMessage()); }
+    }
+    public boolean isCurrentSession(AuthSession session, ConnectionProfile connection) {
+        synchronized (lock) {
+            return SharedStateLock.run(paths, () -> {
+                AuthSession current = authStore.load().orElse(null);
+                return settings.connection().equals(connection) && current != null
+                        && current.sessionId().equals(session.sessionId()) && current.accessToken().equals(session.accessToken())
+                        && current.profile().studentId() == session.profile().studentId()
+                        && current.serverId().equals(connection.serverId());
+            });
+        }
+    }
+    public void expireSession(String expectedSessionId) {
+        synchronized (lock) {
+            SharedStateLock.run(paths, () -> {
+                AuthSession current = authStore.load().orElse(null);
+                if (current != null && current.sessionId().equals(expectedSessionId)) {
+                    transaction(() -> { configStore.clearUploadKey(); authStore.clear(); identityStore.clear(); });
+                    publish(new Snapshot(State.EXPIRED, null, "登录已过期，请重新登录"));
+                } else publish(loadSnapshot(false));
+                return null;
+            });
+        }
     }
     public AuthSession login(String serverUrl, String studentNo, String password) {
         synchronized (lock) {
@@ -183,9 +217,14 @@ public final class AuthService {
     }
     /** Persist only after target /me verifies the same student for a same-instance entry change. */
     public void applyConnection(ConnectionProfile next, boolean collectEnabled) {
+        applyConnection(next, collectEnabled, null);
+    }
+    public void applyConnection(ConnectionProfile next, boolean collectEnabled, Boolean expectedCollectionEnabled) {
         next.validate();
         synchronized (lock) {
             SharedStateLock.run(paths, () -> {
+                if (expectedCollectionEnabled != null && configStore.collectionEnabled() != expectedCollectionEnabled)
+                    throw new CourseMindException("共享采集开关已被其他 IDE 修改，请重新打开设置后重试");
                 ConnectionProfile previous = settings.connection();
                 byte[] before = rawAuth();
                 AuthSession session = authStore.load().orElse(null);
@@ -203,6 +242,7 @@ public final class AuthService {
                 transaction(() -> {
                     if (!sameInstance) { configStore.clearUploadKey(); authStore.clear(); identityStore.clear(); }
                     configStore.syncServer(next.effectiveUrl(), next.serverId());
+                    configStore.setCollectionEnabled(collectEnabled);
                 });
                 settings.setConnection(next); settings.setCollectEnabled(collectEnabled);
                 publish(loadSnapshot(false)); return null;

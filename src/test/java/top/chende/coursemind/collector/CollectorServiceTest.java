@@ -63,4 +63,10 @@ public class CollectorServiceTest {
         }
         assertFalse(bundled.version().isBlank());
     }
+    @Test public void inspectDoesNotCreateRuntimeOrProbeFiles() throws Exception {
+        java.nio.file.Path root=java.nio.file.Path.of("build/tmp/read-only-inspect-"+java.util.UUID.randomUUID()).toAbsolutePath();
+        new CollectorService(top.chende.coursemind.runtime.RuntimePaths.of(root)).inspect();
+        assertFalse(java.nio.file.Files.exists(root));
+    }
+
 }

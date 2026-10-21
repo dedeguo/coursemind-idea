@@ -41,6 +41,10 @@ public class CourseMindPanelLayoutTest extends BasePlatformTestCase {
         AuthSession session = new AuthSession("layout-test", "https://example.invalid", "test-only",
                 profile, "2026-10-21T00:00:00Z");
         panel.applySnapshot(new AuthService.Snapshot(AuthService.State.LOGGED_IN, session, null));
+        render(panel.component(), 640, 720, "identity-wide");
+        assertVisibleControlsFit(panel.component(), panel.component());
+        JScrollPane identityScroll = findScroll(panel.component());
+        identityScroll.getViewport().setViewPosition(new Point(0, 60));
         render(panel.component(), 320, 720, "identity-narrow");
         assertVisibleControlsFit(panel.component(), panel.component());
         JButton change = findButton(panel.component(), "修改密码");
@@ -141,6 +145,9 @@ public class CourseMindPanelLayoutTest extends BasePlatformTestCase {
     private static void assertVisibleControlsFit(Container parent, JComponent root) {
         for (Component child : parent.getComponents()) {
             if (!child.isVisible()) continue;
+            if (child instanceof JLabel || child instanceof AbstractButton || child instanceof JTextArea) {
+                assertTrue("Text clipped vertically: " + child, child.getHeight() >= child.getPreferredSize().height);
+            }
             if (child instanceof AbstractButton || child instanceof JTextField || child instanceof JTextArea) {
                 Rectangle bounds = SwingUtilities.convertRectangle(child.getParent(), child.getBounds(), root);
                 assertTrue("Control outside left edge: " + bounds, bounds.x >= 0);
