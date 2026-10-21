@@ -71,7 +71,7 @@ public final class ServerUrl {
         return Optional.empty();
     }
 
-    /** 后端实例身份：与共享 config.json 的 server_id 同一口径（规范化后的地址）。 */
+    /** 旧单地址标识的规范化；双网络实例身份使用 ConnectionProfile.serverId()（公网地址）。 */
     public static @NotNull String serverIdOf(String raw) {
         return normalize(raw);
     }

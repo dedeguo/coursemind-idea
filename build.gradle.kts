@@ -15,7 +15,7 @@ plugins {
  * 剖面由 courseMindProfile 显式选择，默认 release；不能仅凭 localIdePath 是否存在判断，
  * 因为用户级 GRADLE_USER_HOME/gradle.properties 可能已配置 localIdePath。
  *
- * - release（默认）：platformType=IC、platformVersion=2023.3、javaVersion=17
+ * - release（默认）：platformType=IU、platformVersion=2025.1.3、javaVersion=21
  * - local：读取 localIdePath 指向的本机 IDE，javaVersion 默认 25
  */
 val localProperties = Properties().apply {
@@ -39,13 +39,13 @@ require(courseMindProfile == "release" || courseMindProfile == "local") {
 }
 val isLocalProfile = courseMindProfile == "local"
 
-val platformType = setting("platformType") ?: "IC"
-val platformVersion = setting("platformVersion") ?: "2023.3"
+val platformType = setting("platformType") ?: "IU"
+val platformVersion = setting("platformVersion") ?: "2025.1.3"
 val localIdePath = setting("localIdePath")?.takeIf { it.isNotBlank() }
-// toolchain 由剖面决定默认值：release=17（IC 2023.3 class 版本 61），local=25（读取 2026.2 平台 class 版本 69）。
+// toolchain 由剖面决定默认值：release=21（IU 2025.1.3 class 版本 65），local=25（读取 2026.2 平台 class 版本 69）。
 // 显式 javaVersion（-P 或 gradle.properties.local）优先，仓库内不写死，避免 local 剖面被 17 覆盖。
-val javaVersion = (setting("javaVersion") ?: if (isLocalProfile) "25" else "17").toInt()
-val pluginSince = setting("pluginSinceBuild") ?: "233"
+val javaVersion = (setting("javaVersion") ?: if (isLocalProfile) "25" else "21").toInt()
+val pluginSince = setting("pluginSinceBuild") ?: "251"
 
 // 平台获取方式：installer=true 走 download.jetbrains.com 安装包（默认，实测可下载）；
 // false 走 IntelliJ Maven 仓库归档（cache-redirector），本机代理下该路径会挂起，见 M0 报告 D-15。
@@ -95,8 +95,8 @@ dependencies {
 
         testFramework(TestFrameworkType.Platform)
 
-        // com.intellij.modules.ultimate 只存在于 Ultimate 平台，发布基线为 Community，不能无条件引入。
-        if (isLocalProfile) {
+        // Ultimate 平台测试需要该模块；显式切换到 Community 时不引入。
+        if (isLocalProfile || platformType == "IU") {
             testBundledPlugins("com.intellij.modules.ultimate")
         }
     }

@@ -43,7 +43,9 @@ public final class SharedAuthStore {
         byte[] plain = Dpapi.unprotect(cipher);
         String json = new String(plain, StandardCharsets.UTF_8);
         try {
-            return AuthSession.fromJson(JsonParser.parseString(json));
+            Optional<AuthSession> result = AuthSession.fromJson(JsonParser.parseString(json));
+            if (result.isEmpty()) throw new CourseMindException("共享登录状态结构无效，请重新登录");
+            return result;
         } catch (RuntimeException e) {
             throw new CourseMindException("共享登录状态已损坏，请重新登录", e);
         }

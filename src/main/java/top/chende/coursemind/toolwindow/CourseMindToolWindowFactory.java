@@ -14,5 +14,7 @@ public final class CourseMindToolWindowFactory implements ToolWindowFactory {
         CourseMindPanel panel = new CourseMindPanel(project);
         Content content = ContentFactory.getInstance().createContent(panel.component(), "", false);
         toolWindow.getContentManager().addContent(content);
+        content.setDisposer(panel);
+        panel.start();
     }
 }

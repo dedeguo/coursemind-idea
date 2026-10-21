@@ -5,85 +5,79 @@ import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import top.chende.coursemind.CourseMindException;
 
-/**
- * 插件自己的非敏感配置（IDEA 用户配置目录下的 coursemind.xml）。
- *
- * <p>凭据一律不放这里：Token 在 auth.dat（DPAPI），upload_key 在共享 config.json。
- * 服务器地址与共享 config.json 的 server_url 可能同时存在，冲突时由设置页展示并可选择以哪套为准。
- */
+/** Non-sensitive preferences only. Shared auth remains authoritative. */
 @State(name = "CourseMindSettings", storages = @Storage("coursemind.xml"))
 public final class CourseMindSettings implements PersistentStateComponent<CourseMindSettings.State> {
-
-    public static final int CONFIG_VERSION = 1;
-
+    public static final int CONFIG_VERSION = 2;
     private State state = new State();
-
+    public CourseMindSettings() { migrate(); }
     public static CourseMindSettings getInstance() {
         return ApplicationManager.getApplication().getService(CourseMindSettings.class);
     }
-
     public static final class State {
-        /** 用户在本插件中选择的服务器地址（已规范化）。 */
-        public String serverUrl = "";
-        /** 采集开关（M1 仅本插件可见，跨 IDE 共享在 M3 核对）。 */
+        public String serverUrl = ""; // legacy single address, retained for migration
+        public String publicUrl = "";
+        public String campusUrl = "";
+        public String network = "public";
+        public boolean connectionSaved;
         public boolean collectEnabled = true;
-        /** 配置版本，用于后续迁移。 */
-        public int configVersion = CONFIG_VERSION;
-        /** 上次登录的学号，仅用于输入框预填，不属于凭据。 */
+        public int configVersion;
         public String lastStudentNo = "";
+        public String migrationNotice = "";
     }
-
-    @Override
-    public @NotNull State getState() {
-        return state;
-    }
-
-    @Override
-    public void loadState(@NotNull State state) {
-        this.state = state;
-        migrate();
-    }
-
+    @Override public synchronized @NotNull State getState() { return state; }
+    @Override public synchronized void loadState(@NotNull State loaded) { state = loaded; migrate(); }
     private void migrate() {
-        if (state.serverUrl == null) {
-            state.serverUrl = "";
-        }
-        if (state.lastStudentNo == null) {
-            state.lastStudentNo = "";
-        }
+        if (state.lastStudentNo == null) state.lastStudentNo = "";
+        if (state.migrationNotice == null) state.migrationNotice = "";
         if (state.configVersion < CONFIG_VERSION) {
-            state.serverUrl = ServerUrl.normalize(state.serverUrl);
+            if (state.serverUrl != null && !state.serverUrl.isBlank() && (state.publicUrl == null || state.publicUrl.isBlank())) {
+                state.publicUrl = ServerUrl.normalize(state.serverUrl);
+                state.network = "public";
+                state.connectionSaved = true;
+                state.migrationNotice = "已保留旧服务器地址到公网字段；原配置未标明网络用途，请确认两套入口属于同一服务实例。";
+            }
+            if (state.publicUrl == null || state.publicUrl.isBlank()) state.publicUrl = ConnectionProfile.DEFAULT_PUBLIC;
+            if (state.campusUrl == null || state.campusUrl.isBlank()) state.campusUrl = ConnectionProfile.DEFAULT_CAMPUS;
             state.configVersion = CONFIG_VERSION;
         }
+        state.serverUrl = "";
     }
-
-    public @NotNull String getServerUrl() {
-        return state.serverUrl == null ? "" : state.serverUrl;
+    public synchronized ConnectionProfile connection() { return new ConnectionProfile(state.publicUrl, state.campusUrl, state.network); }
+    public synchronized void setConnection(ConnectionProfile profile) {
+        profile.validate();
+        state.publicUrl = profile.publicUrl(); state.campusUrl = profile.campusUrl(); state.network = profile.network();
+        state.connectionSaved = true; state.migrationNotice = "";
     }
-
-    public void setServerUrl(@Nullable String serverUrl) {
-        state.serverUrl = ServerUrl.normalize(serverUrl);
+    /** First use adopts valid machine/shared config, never overwrites explicitly saved preferences. */
+    public synchronized void adoptShared(String effective, String serverId) {
+        if (state.connectionSaved || effective == null || effective.isBlank()) return;
+        String id = serverId == null || serverId.isBlank() ? effective : serverId;
+        ConnectionProfile profile = new ConnectionProfile(id,
+                ServerUrl.normalize(effective).equals(ServerUrl.normalize(id)) ? state.campusUrl : effective,
+                ServerUrl.normalize(effective).equals(ServerUrl.normalize(id)) ? "public" : "campus");
+        try { profile.validate(); } catch (CourseMindException e) {
+            throw new CourseMindException("共享服务器配置无效，未以默认值覆盖：" + e.getMessage());
+        }
+        setConnection(profile);
+        state.migrationNotice = "已采用机房/其他 IDE 的共享服务器配置；请确认两套入口。";
     }
-
-    public boolean isCollectEnabled() {
-        return state.collectEnabled;
+    public synchronized String migrationNotice() { return state.migrationNotice; }
+    public String getServerUrl() { return connection().effectiveUrl(); }
+    /** Compatibility for callers editing the active entry point. */
+    public void setServerUrl(String url) {
+        ConnectionProfile p = connection();
+        synchronized (this) {
+            state.publicUrl = "campus".equals(p.network()) ? p.publicUrl() : ServerUrl.normalize(url);
+            state.campusUrl = "campus".equals(p.network()) ? ServerUrl.normalize(url) : p.campusUrl();
+            state.connectionSaved = true;
+        }
     }
-
-    public void setCollectEnabled(boolean enabled) {
-        state.collectEnabled = enabled;
-    }
-
-    public @NotNull String getLastStudentNo() {
-        return state.lastStudentNo == null ? "" : state.lastStudentNo;
-    }
-
-    public void setLastStudentNo(@Nullable String studentNo) {
-        state.lastStudentNo = studentNo == null ? "" : studentNo.trim();
-    }
-
-    public boolean isConfigured() {
-        return !ServerUrl.normalize(getServerUrl()).isEmpty();
-    }
+    public synchronized boolean isCollectEnabled() { return state.collectEnabled; }
+    public synchronized void setCollectEnabled(boolean value) { state.collectEnabled = value; }
+    public synchronized String getLastStudentNo() { return state.lastStudentNo; }
+    public synchronized void setLastStudentNo(String value) { state.lastStudentNo = value == null ? "" : value.trim(); }
+    public boolean isConfigured() { return ServerUrl.validate(getServerUrl()).isEmpty(); }
 }

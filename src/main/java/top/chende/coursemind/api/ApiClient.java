@@ -65,6 +65,18 @@ public final class ApiClient {
         return profileOf(data);
     }
 
+    public @NotNull String changePassword(String accessToken, String oldPassword, String newPassword) {
+        JsonObject body = new JsonObject();
+        body.addProperty("old_password", oldPassword);
+        body.addProperty("new_password", newPassword);
+        JsonObject data = request("POST", "/api/v1/student/change-password", accessToken, body);
+        String token = string(data, "access_token");
+        if (token == null || token.isBlank()) {
+            throw new ApiException("密码可能已修改，但服务端未返回新凭据，请重新登录", 0, false, null);
+        }
+        return token;
+    }
+
     private @NotNull StudentProfile profileOf(@NotNull JsonObject data) {
         int studentId = intValue(data, "student_id");
         String studentNo = string(data, "student_no");

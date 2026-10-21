@@ -59,15 +59,29 @@ public final class SharedConfigStore {
                 && !element.getAsString().isBlank();
     }
 
+    public String sharedServerId() {
+        JsonObject json = read();
+        return string(json, "server_id", string(json, "server_url", ""));
+    }
+
+    private static String string(JsonObject json, String key, String fallback) {
+        JsonElement value = json.get(key);
+        return value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()
+                && !value.getAsString().isBlank() ? ServerUrl.normalize(value.getAsString()) : fallback;
+    }
+
     /** 登录成功后写入服务器标识与上传凭据（collector 只用 upload_key 上传）。 */
     public void applyLogin(@NotNull String serverUrl, @NotNull String uploadKey, @Nullable String classroom) {
+        applyLogin(serverUrl, serverUrl, uploadKey, classroom);
+    }
+
+    public void applyLogin(String effectiveUrl, String serverId, String uploadKey, String classroom) {
         if (uploadKey.isBlank()) {
             throw new CourseMindException("服务端未返回上传凭据（upload_key），请联系管理员检查服务端配置");
         }
-        String serverId = ServerUrl.serverIdOf(serverUrl);
         mutate(json -> {
-            json.addProperty("server_url", serverId);
-            json.addProperty("server_id", serverId);
+            json.addProperty("server_url", ServerUrl.normalize(effectiveUrl));
+            json.addProperty("server_id", ServerUrl.normalize(serverId));
             fillPathIfAbsent(json, "identity_file", paths.identityFile().toString());
             fillPathIfAbsent(json, "cache_dir", paths.cacheDir().toString());
             json.addProperty("upload_key", uploadKey);
@@ -87,10 +101,15 @@ public final class SharedConfigStore {
 
     /** 仅同步服务器字段（切换服务器后使用）。 */
     public void syncServer(@NotNull String serverUrl) {
-        String serverId = ServerUrl.serverIdOf(serverUrl);
+        syncServer(serverUrl, serverUrl);
+    }
+
+    public void syncServer(String effectiveUrl, String serverId) {
         mutate(json -> {
-            json.addProperty("server_url", serverId);
-            json.addProperty("server_id", serverId);
+            String previousId = string(json, "server_id", string(json, "server_url", ""));
+            if (!ServerUrl.normalize(serverId).equals(previousId)) json.remove("upload_key");
+            json.addProperty("server_url", ServerUrl.normalize(effectiveUrl));
+            json.addProperty("server_id", ServerUrl.normalize(serverId));
             fillPathIfAbsent(json, "identity_file", paths.identityFile().toString());
             fillPathIfAbsent(json, "cache_dir", paths.cacheDir().toString());
         });
