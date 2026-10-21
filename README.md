@@ -8,6 +8,8 @@ CourseMind 的 IntelliJ IDEA 插件，基于 JetBrains 官方 IntelliJ Platform 
 
 - [需求文档 V1.2.1](docs/CourseMind-IDEA-Requirements-V1.2.0.md)：功能范围、业务流程、接口依赖、验收标准与开发任务清单。
 - [M0 基线核对报告](docs/CourseMind-IDEA-M0-Baseline.md)：复用清单、联调契约、构建结论、collector 产物核对与差异清单。
+- [IntelliJ Platform 插件开发官方文档](https://plugins.jetbrains.com/docs/intellij/welcome.html)：JetBrains 官方的插件开发指南，含 SDK 配置、扩展点注册、UI 开发、测试与发布流程。
+- [IntelliJ Platform SDK 中文翻译](https://docs.namichong.com/intellij-platform-sdk/welcome.html)：上述官方文档的社区中文翻译（**非官方**），仅作阅读辅助，内容以官方英文版为准。
 
 ## 当前功能
 
@@ -194,9 +196,23 @@ M1 起需要优先处理 M0 报告登记的四项契约缺口：凭据文件跨�
 
 ## 持续集成
 
-`.github/workflows/build.yml` 在推送到 `main`、提交 PR 或手动触发时运行，使用 Ubuntu 和 JDK 17（release 剖面）执行 `check buildPlugin`，完成编译、测试和插件打包。IntelliJ 平台测试通过虚拟显示器运行。
+`.github/workflows/build.yml` 使用 Ubuntu 和 JDK 17（release 剖面），按触发方式分两档：
 
-成功后，可在 GitHub Actions 对应运行的 Artifacts 中下载 `coursemind-plugin-<运行编号>`，解压下载产物后得到插件安装 ZIP。测试报告以 `test-reports-<运行编号>` 保存，测试失败时也会尝试上传，产物保留 14 天。
+| 触发 | 执行内容 | 产物 |
+| --- | --- | --- |
+| 推送到 `main`、提交 PR | `check`（编译 + 测试） | 仅测试报告 |
+| 推送 `v*` tag（如 `v0.3.0`）、手动触发 | `check` + `buildPlugin` | 测试报告 + 插件 ZIP |
+
+普通提交不再打包，避免每次推送都产出 ZIP。IntelliJ 平台测试通过虚拟显示器运行。
+
+tag 构建成功后，可在 GitHub Actions 对应运行的 Artifacts 中下载 `coursemind-plugin-<tag>`（tag 名不要包含 `/`，否则 artifact 上传会失败），解压后得到插件安装 ZIP。测试报告以 `test-reports-<运行编号>` 保存，测试失败时也会尝试上传，产物保留 14 天。
+
+发布时打 tag 并推送：
+
+```powershell
+git tag v0.3.0
+git push origin v0.3.0
+```
 
 CI 会在检出副本中移除仓库的本机 HTTPS 代理设置。此工作流不执行多版本兼容性验证或自动发布，不需要 Marketplace 发布凭据。
 
