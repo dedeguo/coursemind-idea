@@ -6,6 +6,7 @@ import com.intellij.ui.JBColor;
 import top.chende.coursemind.auth.AuthService;
 import top.chende.coursemind.auth.AuthSession;
 import top.chende.coursemind.config.CourseMindSettings;
+import top.chende.coursemind.ui.CourseMindUi;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -74,6 +75,22 @@ public class CourseMindPanelLayoutTest extends BasePlatformTestCase {
         panel.applySnapshot(new AuthService.Snapshot(AuthService.State.LOGGED_OUT, null, null));
         assertFalse(visibleText(panel.component()).contains("当前密码"));
     }
+    public void testCompactAndLargeFontFieldsRetainTheirPreferredHeight() throws Exception {
+        JTextField input = new JTextField("layout fixture", 18);
+        input.setBorder(BorderFactory.createEmptyBorder(1, 2, 1, 2));
+        JComponent view = CourseMindUi.stack(12, CourseMindUi.field("Username", input));
+        input.setFont(new Font(Font.DIALOG, Font.PLAIN, 11));
+        assertTrue("Fixture must cover native fields below the old 20px threshold",
+                input.getPreferredSize().height < 20);
+        render(view, 320, 180, "input-compact-font");
+        checkFields(view);
+        input.setFont(input.getFont().deriveFont(48f));
+        assertTrue("Fixture must cover scaled fields above the old 50px threshold",
+                input.getPreferredSize().height > 50);
+        render(view, 320, 180, "input-large-font");
+        checkFields(view);
+    }
+
     private static JButton findButton(Container parent, String text) {
         for (Component child : parent.getComponents()) {
             if (child instanceof JButton b && text.equals(b.getText())) return b;
@@ -134,8 +151,12 @@ public class CourseMindPanelLayoutTest extends BasePlatformTestCase {
         for (Component child : parent.getComponents()) {
             if (!child.isVisible()) continue;
             if (child instanceof JTextField) {
-                assertTrue("Input must not collapse", child.getHeight() >= 20);
-                assertTrue("Input must not stretch vertically", child.getHeight() <= 50);
+                // Native font metrics and borders differ across Windows/Linux and UI scales.
+                // A usable single-line field retains its preferred height without compression or stretching.
+                int preferredHeight = child.getPreferredSize().height;
+                assertTrue("Input must have a positive preferred height: " + child, preferredHeight > 0);
+                assertEquals("Input must retain its theme/font preferred height: " + child,
+                        preferredHeight, child.getHeight());
                 assertTrue("Input must remain usable in a narrow window", child.getWidth() >= 160);
             }
             if (child instanceof Container container) checkFields(container);
