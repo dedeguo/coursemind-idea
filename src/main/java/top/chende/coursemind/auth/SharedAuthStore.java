@@ -60,6 +60,11 @@ public final class SharedAuthStore {
     }
 
     public void save(@NotNull AuthSession session) {
+        if (exists()) {
+            AuthSession previous = load().orElseThrow();
+            if (previous.environmentId() != null && session.environmentId() == null)
+                throw new CourseMindException("不能将教学共享身份降级为旧协议，请升级组件");
+        }
         byte[] plain = session.toJson().toString().getBytes(StandardCharsets.UTF_8);
         write(Dpapi.protect(plain));
     }

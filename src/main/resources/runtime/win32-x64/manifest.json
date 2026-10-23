@@ -1,9 +1,6 @@
 {
-  "version": "0.2.11",
-  "config_version": 1,
-  "sha256": "228f937c4d7cc4a2c851515e885e7c88069c51453ddb7b6494fa164c7aba222c",
-  "built_at": "2026-10-21T21:48:59+08:00",
-  "file": "collector.exe",
-  "size": 9015938,
-  "source": "coursemind-collect/client/dist/collector.exe"
+  "version": "0.2.12",
+  "config_version": 2,
+  "sha256": "aed44a4846437ae88119da4efd5fd0d5eac89627a72aba29077d251033c033cf",
+  "built_at": "2026-10-23T21:38:25+08:00"
 }

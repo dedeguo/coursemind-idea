@@ -31,6 +31,21 @@ public class SharedAuthStoreTest {
                 new AuthSession.Profile(7, "20230001", "张三", "男", "计算机2301", "1-339", null),
                 Instant.now().toString());
     }
+    @Test public void educationSessionRoundTripsAndRefusesProtocolDowngrade() throws IOException {
+        Assume.assumeTrue(Dpapi.isSupported());
+        SharedAuthStore store = new SharedAuthStore(folder.newFolder().toPath().resolve("auth.dat"));
+        AuthSession original = sample();
+        AuthSession education = new AuthSession(original.sessionId(), original.serverId(), original.accessToken(),
+                new AuthSession.Profile(7, "001", "学生", null, "班级", "", null), original.updatedAt(), "env-a", 9);
+        store.save(education);
+        AuthSession loaded = store.load().orElseThrow();
+        assertEquals("env-a", loaded.environmentId()); assertEquals(Integer.valueOf(9), loaded.accountId());
+        assertEquals("", loaded.profile().classroom());
+        org.junit.Assert.assertThrows(RuntimeException.class, () -> store.save(original));
+        assertEquals("env-a", store.load().orElseThrow().environmentId());
+        var malformed = education.toJson(); malformed.remove("accountId");
+        assertTrue(AuthSession.fromJson(malformed).isEmpty());
+    }
 
     @Test
     public void missingFileMeansLoggedOut() throws IOException {

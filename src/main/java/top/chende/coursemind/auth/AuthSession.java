@@ -15,25 +15,36 @@ import java.util.Optional;
  */
 public final class AuthSession {
 
-    public static final int SCHEMA_VERSION = 1;
+    public static final int SCHEMA_VERSION = 2;
 
     private final String sessionId;
     private final String serverId;
     private final String accessToken;
     private final Profile profile;
     private final String updatedAt;
+    private final String environmentId;
+    private final Integer accountId;
 
     public AuthSession(@NotNull String sessionId,
                        @NotNull String serverId,
                        @NotNull String accessToken,
                        @NotNull Profile profile,
                        @NotNull String updatedAt) {
+        this(sessionId, serverId, accessToken, profile, updatedAt, null, null);
+    }
+
+    public AuthSession(String sessionId, String serverId, String accessToken, Profile profile,
+                       String updatedAt, String environmentId, Integer accountId) {
         this.sessionId = sessionId;
         this.serverId = serverId;
         this.accessToken = accessToken;
         this.profile = profile;
         this.updatedAt = updatedAt;
+        this.environmentId = environmentId;
+        this.accountId = accountId;
     }
+    public @Nullable String environmentId() { return environmentId; }
+    public @Nullable Integer accountId() { return accountId; }
 
     public @NotNull String sessionId() {
         return sessionId;
@@ -61,7 +72,11 @@ public final class AuthSession {
 
     public @NotNull JsonObject toJson() {
         JsonObject root = new JsonObject();
-        root.addProperty("schemaVersion", SCHEMA_VERSION);
+        root.addProperty("schemaVersion", environmentId == null ? 1 : SCHEMA_VERSION);
+        if (environmentId != null) {
+            root.addProperty("environmentId", environmentId);
+            root.addProperty("accountId", accountId);
+        }
         root.addProperty("sessionId", sessionId);
         root.addProperty("serverId", serverId);
         root.addProperty("accessToken", accessToken);
@@ -78,7 +93,7 @@ public final class AuthSession {
             return Optional.empty();
         }
         JsonObject root = element.getAsJsonObject();
-        if (!hasInt(root, "schemaVersion") || root.get("schemaVersion").getAsInt() != SCHEMA_VERSION) {
+        if (!hasInt(root, "schemaVersion") || (root.get("schemaVersion").getAsInt() != 1 && root.get("schemaVersion").getAsInt() != SCHEMA_VERSION)) {
             return Optional.empty();
         }
         String sessionId = string(root, "sessionId");
@@ -89,7 +104,11 @@ public final class AuthSession {
         if (sessionId == null || serverId == null || accessToken == null || updatedAt == null || profile.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(new AuthSession(sessionId, serverId, accessToken, profile.get(), updatedAt));
+        String environmentId = string(root, "environmentId");
+        Integer accountId = hasInt(root, "accountId") ? root.get("accountId").getAsInt() : null;
+        if (root.get("schemaVersion").getAsInt() == 2 && (environmentId == null || accountId == null || accountId <= 0)) return Optional.empty();
+        if (root.get("schemaVersion").getAsInt() == 1 && (root.has("environmentId") || root.has("accountId"))) return Optional.empty();
+        return Optional.of(new AuthSession(sessionId, serverId, accessToken, profile.get(), updatedAt, environmentId, accountId));
     }
 
     private static @Nullable String string(JsonObject root, String name) {
@@ -188,8 +207,8 @@ public final class AuthSession {
             int studentId = json.get("studentId").getAsInt();
             String studentNo = string(json, "studentNo");
             String name = string(json, "name");
-            String className = string(json, "className");
-            String classroom = string(json, "classroom");
+            String className = plainString(json, "className");
+            String classroom = plainString(json, "classroom");
             if (studentId <= 0 || studentNo == null || name == null || className == null || classroom == null) {
                 return Optional.empty();
             }
@@ -197,5 +216,10 @@ public final class AuthSession {
             Integer projectId = hasInt(json, "projectId") ? json.get("projectId").getAsInt() : null;
             return Optional.of(new Profile(studentId, studentNo, name, gender, className, classroom, projectId));
         }
+    }
+
+    private static String plainString(JsonObject json, String key) {
+        JsonElement value = json.get(key);
+        return value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isString() ? value.getAsString() : null;
     }
 }

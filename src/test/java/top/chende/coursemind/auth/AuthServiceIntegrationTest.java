@@ -22,6 +22,7 @@ public class AuthServiceIntegrationTest {
     private final AtomicBoolean rejectCampus = new AtomicBoolean();
     private final AtomicBoolean rejectPublic = new AtomicBoolean();
     private final AtomicBoolean wrongCampusIdentity = new AtomicBoolean();
+    private final java.util.concurrent.atomic.AtomicReference<String> environment = new java.util.concurrent.atomic.AtomicReference<>();
     @Before public void setUp() throws Exception {
         Assume.assumeTrue(Dpapi.isSupported());
         publicServer = server(false); campusServer = server(true);
@@ -48,6 +49,8 @@ public class AuthServiceIntegrationTest {
             if (campus && rejectCampus.get()) status = 401;
             if (!campus && rejectPublic.get()) status = 401;
             if (campus && wrongCampusIdentity.get()) data = data.replace("\"student_id\":7", "\"student_id\":8");
+            if (environment.get() != null && !path.endsWith("change-password"))
+                data = data.substring(0, data.length() - 1) + ",\"environment_id\":\"" + environment.get() + "\",\"account_id\":9}";
             byte[] response = ("{\"code\":" + (status == 200 ? 0 : status) + ",\"message\":\"" + (status == 400 ? "旧密码不正确" : "test") + "\",\"data\":" + data + "}").getBytes(StandardCharsets.UTF_8);
             exchange.sendResponseHeaders(status, response.length);
             exchange.getResponseBody().write(response); exchange.close();
@@ -56,6 +59,32 @@ public class AuthServiceIntegrationTest {
     }
     private String url(HttpServer s) { return "http://127.0.0.1:" + s.getAddress().getPort(); }
     private AuthSession login() { return service.login(publicUrl, "20230001", "password"); }
+    @Test public void educationLoginAndPasswordKeepEnvironmentWithoutPlaintextUploadCredential() throws Exception {
+        environment.set("env-a");
+        AuthSession session = login();
+        assertEquals("env-a", session.environmentId()); assertEquals(Integer.valueOf(9), session.accountId());
+        assertEquals(2, session.toJson().get("schemaVersion").getAsInt());
+        var config = new SharedConfigStore(paths).read();
+        assertEquals("env-a", config.get("environment_id").getAsString());
+        assertFalse(config.has("upload_key")); assertFalse(Files.readString(paths.configFile()).contains("old-token"));
+        assertEquals(AuthService.State.LOGGED_IN, service.refresh().state());
+        AuthSession changed = service.changePassword(session.sessionId(), "password", "new-password");
+        assertEquals("env-a", changed.environmentId());
+        assertEquals(Integer.valueOf(9), new SharedAuthStore(paths.authFile()).load().orElseThrow().accountId());
+    }
+    @Test public void sameUrlNewDatabaseNeverReusesPreviousEnvironment() throws Exception {
+        environment.set("env-a"); AuthSession old = login();
+        Files.createDirectories(paths.cacheDir()); Path queue = paths.cacheDir().resolve("pending.json");
+        String pending = "[{\"environment_id\":\"env-a\",\"account_id\":9,\"record\":{\"student_id\":7}}]";
+        Files.writeString(queue, pending);
+        environment.set("env-b");
+        assertEquals(AuthService.State.ERROR, service.refresh().state());
+        assertThrows(RuntimeException.class, () -> service.applyConnection(new ConnectionProfile(publicUrl, campusUrl, "campus"), true));
+        assertEquals("env-a", new SharedAuthStore(paths.authFile()).load().orElseThrow().environmentId());
+        AuthSession next = login();
+        assertEquals("env-b", next.environmentId()); assertNotEquals(old.sessionId(), next.sessionId());
+        assertEquals(pending, Files.readString(queue));
+    }
     @Test public void entrySwitchKeepsCredentialsAndQueueButInstanceChangeClearsIdentity() throws Exception {
         AuthSession session = login(); byte[] auth = Files.readAllBytes(paths.authFile());
         Files.createDirectories(paths.cacheDir()); Path queue = paths.cacheDir().resolve("pending.json");

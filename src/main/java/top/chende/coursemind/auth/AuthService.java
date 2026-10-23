@@ -94,11 +94,13 @@ public final class AuthService {
                 byte[] before = authStore.readRaw();
                 ApiClient.StudentProfile profile = new ApiClient(connection.effectiveUrl()).me(session.accessToken());
                 assertUnchanged(before, connection);
-                if (profile.studentId() != session.profile().studentId()) {
+                if (profile.studentId() != session.profile().studentId()
+                        || !Objects.equals(profile.environmentId(), session.environmentId())
+                        || !Objects.equals(profile.accountId(), session.accountId())) {
                     return new Snapshot(State.ERROR, null, "服务器返回的身份与共享会话不一致，已停止使用该身份");
                 }
                 session = new AuthSession(session.sessionId(), session.serverId(), session.accessToken(),
-                        profileOf(profile, session.profile().projectId()), session.updatedAt());
+                        profileOf(profile, session.profile().projectId()), session.updatedAt(), session.environmentId(), session.accountId());
             }
             return new Snapshot(State.LOGGED_IN, session, null);
         } catch (ApiException e) {
@@ -146,12 +148,13 @@ public final class AuthService {
                 assertUnchanged(before, connection);
                 AuthSession.Profile profile = profileOf(result.profile(), null);
                 AuthSession session = new AuthSession(UUID.randomUUID().toString(), connection.serverId(),
-                        result.accessToken(), profile, Instant.now().toString());
+                        result.accessToken(), profile, Instant.now().toString(), result.profile().environmentId(), result.profile().accountId());
                 transaction(() -> {
                     // Remove the old upload credential before identity changes.
                     configStore.clearUploadKey();
                     authStore.save(session); identityStore.write(profile);
-                    configStore.applyLogin(connection.effectiveUrl(), connection.serverId(), result.uploadKey(), profile.classroom());
+                    if (session.environmentId() == null) configStore.applyLogin(connection.effectiveUrl(), connection.serverId(), result.uploadKey(), profile.classroom());
+                    else configStore.applyEducationLogin(connection.effectiveUrl(), connection.serverId(), session.environmentId(), session.accountId(), profile.studentId(), profile.classroom());
                 });
                 settings.setLastStudentNo(profile.studentNo());
                 publish(new Snapshot(State.LOGGED_IN, session, null)); return session;
@@ -191,7 +194,7 @@ public final class AuthService {
                     throw new CourseMindException("密码已修改，但共享身份已变化，本次未覆盖其他账号；请使用新密码重新登录", e);
                 }
                 AuthSession next = new AuthSession(UUID.randomUUID().toString(), current.serverId(), token,
-                        current.profile(), Instant.now().toString());
+                        current.profile(), Instant.now().toString(), current.environmentId(), current.accountId());
                 try { authStore.save(next); }
                 catch (CourseMindException e) {
                     try { configStore.clearUploadKey(); } catch (CourseMindException cleanup) { e.addSuppressed(cleanup); }
@@ -235,7 +238,8 @@ public final class AuthService {
                 if (session != null && sameInstance && !next.effectiveUrl().equals(previous.effectiveUrl())) {
                     try {
                         ApiClient.StudentProfile profile = new ApiClient(next.effectiveUrl()).me(session.accessToken());
-                        if (profile.studentId() != session.profile().studentId()) throw new CourseMindException("目标入口身份不一致，连接配置未保存");
+                        if (profile.studentId() != session.profile().studentId() || !Objects.equals(profile.environmentId(), session.environmentId())
+                                || !Objects.equals(profile.accountId(), session.accountId())) throw new CourseMindException("目标入口身份或数据环境不一致，连接配置未保存");
                     } catch (ApiException e) { throw new CourseMindException("目标入口校验失败，原配置保留：" + e.getMessage(), e); }
                 }
                 assertUnchanged(before, previous);

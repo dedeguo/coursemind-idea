@@ -28,10 +28,18 @@ public final class CollectorStatusReader {
                     : new Status("共享暂停待生效", "需部署 collector 0.2.11+；当前客户端可能仍在采集", "");
             String id = text(config, "server_id", text(config, "server_url", ""));
             if (!ServerUrl.normalize(id).equals(connection.serverId())) return new Status("共享采集服务器不一致", "请打开设置确认采集归属", "");
-            if (text(config, "upload_key", "").isBlank()) return new Status("缺少上传凭据", "请重新登录后检查采集环境", "");
+            if (session.environmentId() != null) {
+                if (CollectorService.compareVersions(new CollectorService(paths).localVersion().orElse(""), "0.2.12") < 0)
+                    return new Status("教学采集需要升级", "需要 collector 0.2.12+ 支持学生认证上传；原队列保留", "");
+                if (!session.environmentId().equals(text(config, "environment_id", ""))
+                        || !config.has("account_id") || config.get("account_id").getAsInt() != session.accountId()
+                        || !config.has("student_id") || config.get("student_id").getAsInt() != session.profile().studentId()
+                        || !config.has("collector_protocol_version") || config.get("collector_protocol_version").getAsInt() != 2)
+                    return new Status("教学采集身份不一致", "请重新登录；原队列保留", "");
+            } else if (text(config, "upload_key", "").isBlank()) return new Status("缺少上传凭据", "请重新登录后检查采集环境", "");
             if (!Files.isRegularFile(paths.collectorExe())) return new Status("未部署采集客户端", "请在设置中部署或修复客户端", "");
             Path cache = Path.of(text(config, "cache_dir", paths.cacheDir().toString()));
-            int pending = 0; boolean queueKnown = true;
+            int pending = 0; boolean queueKnown = true; boolean authenticationRequired = false;
             Path queue = cache.resolve("pending.json");
             if (Files.exists(queue)) {
                 if (Files.size(queue) > 12 * 1024 * 1024) queueKnown = false;
@@ -45,10 +53,16 @@ public final class CollectorStatusReader {
                         String entryId = text(entry, "server_id", text(entry, "server_url", ""));
                         if (record == null || !record.has("student_id") || entryId.isBlank()) { queueKnown = false; continue; }
                         if (record.get("student_id").getAsInt() == session.profile().studentId()
-                                && ServerUrl.normalize(entryId).equals(connection.serverId())) pending++;
+                                && ServerUrl.normalize(entryId).equals(connection.serverId())
+                                && (session.environmentId() == null ? !entry.has("environment_id") : session.environmentId().equals(text(entry, "environment_id", ""))
+                                    && entry.has("account_id") && entry.get("account_id").getAsInt() == session.accountId())) {
+                            pending++;
+                            if (session.sessionId().equals(text(entry, "blocked_session_id", ""))) authenticationRequired = true;
+                        }
                     }
                 }
             }
+            if (authenticationRequired) return new Status("登录失效，请重新登录", "本人待上传 " + pending + " 条保留；同身份登录后继续上传", "");
             Instant since;
             try { since = Instant.parse(session.updatedAt()); } catch (RuntimeException e) { since = clock.instant(); }
             if (since.isBefore(clock.instant().minusSeconds(86400))) since = clock.instant().minusSeconds(86400);

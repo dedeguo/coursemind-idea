@@ -66,6 +66,8 @@ public final class SharedConfigStore {
 
     public boolean hasUploadKey() {
         JsonObject json = read();
+        if (json.has("environment_id")) return Files.isRegularFile(paths.authFile()) && json.has("collector_protocol_version")
+                && json.get("collector_protocol_version").getAsInt() == 2;
         JsonElement element = json.get("upload_key");
         return element != null && element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()
                 && !element.getAsString().isBlank();
@@ -88,6 +90,7 @@ public final class SharedConfigStore {
     }
 
     public void applyLogin(String effectiveUrl, String serverId, String uploadKey, String classroom) {
+        if (read().has("environment_id")) throw new CourseMindException("教学环境需要新版身份信息，请重新登录或升级组件");
         if (uploadKey.isBlank()) {
             throw new CourseMindException("服务端未返回上传凭据（upload_key），请联系管理员检查服务端配置");
         }
@@ -100,6 +103,23 @@ public final class SharedConfigStore {
             if (classroom != null && !classroom.isBlank() && !json.has("classroom")) {
                 json.addProperty("classroom", classroom);
             }
+        });
+    }
+
+    public void applyEducationLogin(String effectiveUrl, String serverId, String environmentId, int accountId, int studentId, String classroom) {
+        mutate(json -> {
+            json.addProperty("server_url", ServerUrl.normalize(effectiveUrl));
+            json.addProperty("server_id", ServerUrl.normalize(serverId));
+            json.addProperty("authentication_mode", "education");
+            json.addProperty("collector_protocol_version", 2);
+            json.addProperty("environment_id", environmentId);
+            json.addProperty("account_id", accountId);
+            json.addProperty("student_id", studentId);
+            json.addProperty("auth_file", paths.authFile().toString());
+            fillPathIfAbsent(json, "identity_file", paths.identityFile().toString());
+            fillPathIfAbsent(json, "cache_dir", paths.cacheDir().toString());
+            if (!json.has("classroom")) json.addProperty("classroom", classroom == null ? "" : classroom);
+            json.remove("upload_key");
         });
     }
 

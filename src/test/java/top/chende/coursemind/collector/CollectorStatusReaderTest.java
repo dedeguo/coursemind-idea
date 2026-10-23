@@ -22,6 +22,21 @@ public class CollectorStatusReaderTest {
     private CollectorStatusReader.Status read(RuntimePaths paths) {
         return new CollectorStatusReader().read(paths,connection,session,clock,paths.root().resolve("test-hooks.json"));
     }
+    @Test public void teachingQueueCountsEnvironmentAndReportsAuthenticationHold() throws Exception {
+        RuntimePaths paths = setup();
+        new SharedConfigStore(paths).applyEducationLogin("https://public", "https://public", "env-a", 9, 7, "");
+        Files.writeString(paths.versionFile(), "{\"version\":\"0.2.12\"}");
+        AuthSession education = new AuthSession(session.sessionId(), session.serverId(), session.accessToken(), session.profile(), session.updatedAt(), "env-a", 9);
+        Files.writeString(paths.cacheDir().resolve("pending.json"), """
+        [{"server_id":"https://public","environment_id":"env-a","account_id":9,"record":{"student_id":7},"blocked_session_id":"s"},
+         {"server_id":"https://public","environment_id":"env-b","account_id":9,"record":{"student_id":7}},
+         {"server_id":"https://public","record":{"student_id":7}}]
+        """);
+        var status = new CollectorStatusReader().read(paths, connection, education, clock, paths.root().resolve("hooks.json"));
+        assertEquals("登录失效，请重新登录", status.label()); assertTrue(status.detail().contains("1 条保留"));
+        Files.writeString(paths.versionFile(), "{\"version\":\"0.2.11\"}");
+        assertEquals("教学采集需要升级", new CollectorStatusReader().read(paths, connection, education, clock).label());
+    }
     @Test public void queueCountsOnlyCurrentStudentAndInstance() throws Exception {
         RuntimePaths paths=setup(); Files.writeString(paths.cacheDir().resolve("pending.json"),"""
         [{"server_id":"https://public","record":{"student_id":7}},

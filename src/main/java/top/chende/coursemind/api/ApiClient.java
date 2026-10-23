@@ -91,8 +91,12 @@ public final class ApiClient {
         if (studentId <= 0 || studentNo == null || name == null) {
             throw new ApiException("服务端返回的身份信息不完整，请联系管理员", 0, false, null);
         }
+        String environmentId = string(data, "environment_id");
+        Integer accountId = data.has("account_id") ? intValue(data, "account_id") : null;
+        if ((environmentId == null) != (accountId == null) || (accountId != null && accountId <= 0))
+            throw new ApiException("教学身份缺少账号或环境标识，请重新登录", 0, true, null);
         return new StudentProfile(studentId, studentNo, name, string(data, "gender"),
-                className == null ? "" : className, classroom == null ? "" : classroom);
+                className == null ? "" : className, classroom == null ? "" : classroom, environmentId, accountId);
     }
 
     private @NotNull JsonObject request(@NotNull String method,
@@ -266,6 +270,8 @@ public final class ApiClient {
                                  @NotNull String name,
                                  @Nullable String gender,
                                  @NotNull String className,
-                                 @NotNull String classroom) {
+                                 @NotNull String classroom,
+                                 @Nullable String environmentId,
+                                 @Nullable Integer accountId) {
     }
 }
