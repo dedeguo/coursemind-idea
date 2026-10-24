@@ -28,12 +28,16 @@
 #cm-ui .edu-selection{padding:10px 14px;border-top:1px solid var(--cm-line);background:var(--cm-bg)}#cm-ui .edu-selection-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:8px}#cm-ui .edu-selection>button{width:100%;font-size:12px}#cm-ui button:disabled{opacity:.45;cursor:not-allowed}#cm-ui button{cursor:pointer}#cm-ui button:focus-visible,#cm-ui select:focus-visible,#cm-ui input:focus-visible{outline:2px solid var(--cm-blue);outline-offset:2px}
 #cm-ui .edu-selection{display:flex;align-items:center;gap:12px}#cm-ui .edu-selection-top{flex:1;gap:8px;margin:0}#cm-ui .edu-selection-top button{font-size:11px}#cm-ui .edu-selection>button{width:auto;flex-shrink:0}
 #cm-ui .edu-overlay{position:absolute;inset:0;background:#10182866;z-index:3;display:flex;align-items:flex-end}#cm-ui .edu-sheet{width:100%;padding:18px 16px 14px;background:var(--cm-panel);border-top:1px solid var(--cm-line);border-radius:10px 10px 0 0;box-shadow:0 -8px 30px #00000018;max-height:95%;overflow:auto}#cm-ui .edu-sheet-heading{display:flex;justify-content:space-between;align-items:center}#cm-ui .edu-sheet h2{font-size:15px;margin:0}#cm-ui .edu-sheet .cm-field{font-size:12px}#cm-ui .edu-sheet select{font-size:12px}#cm-ui .edu-action{border:0;padding:0;margin:14px 0;display:flex;gap:18px;font-size:12px}#cm-ui .edu-action label{display:flex;align-items:center;gap:5px}#cm-ui .edu-action input{width:auto;accent-color:var(--cm-blue);margin:0}#cm-ui .edu-scope-note{background:var(--cm-bg);padding:10px;border-radius:5px;font-size:11px;line-height:1.8;color:var(--cm-muted)}#cm-ui .edu-link-preview{padding:10px;margin-top:10px;border:1px solid var(--cm-blue);border-radius:5px;background:var(--cm-hover);font-size:12px}#cm-ui .edu-sheet-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}#cm-ui .edu-sheet-footer button{font-size:12px}#cm-ui .edu-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#cm-ui .cm-tool{max-width:var(--edu-width,390px)}
+#cm-ui .edu-md{font-size:12px;line-height:1.85;color:inherit;overflow-wrap:anywhere;min-width:0}#cm-ui .edu-md h3{font-size:14px;margin:18px 0 7px}#cm-ui .edu-md h4{font-size:12px;margin:12px 0 6px}#cm-ui .edu-md p{margin:7px 0}#cm-ui .edu-md ul,#cm-ui .edu-md ol{padding-left:19px;margin:7px 0}#cm-ui .edu-md li{margin:3px 0}#cm-ui .edu-md strong{font-weight:650}#cm-ui .edu-md>:first-child{margin-top:0}#cm-ui .edu-md>:last-child{margin-bottom:0}#cm-ui .edu-md code{font:11px/1.7 Consolas,"JetBrains Mono",monospace;padding:2px 4px;border-radius:3px;background:light-dark(#eef0f3,#35383d);overflow-wrap:anywhere}#cm-ui .edu-md blockquote{margin:12px 0;padding:7px 10px;border-left:3px solid var(--cm-blue);background:var(--cm-hover);color:var(--cm-muted);font-size:11px}#cm-ui .edu-md a{color:var(--cm-blue);text-underline-offset:3px}
+#cm-ui .edu-code{margin:10px 0;border:1px solid var(--cm-line);border-radius:6px;overflow:hidden;min-width:0;background:var(--cm-bg)}#cm-ui .edu-code-head{display:flex;justify-content:space-between;align-items:center;padding:4px 9px;border-bottom:1px solid var(--cm-line);font:10px/1.6 Consolas,monospace;color:var(--cm-muted)}#cm-ui .edu-code-head button{padding:1px 3px;font-size:10px;line-height:1.6}#cm-ui .edu-code pre{max-width:100%;overflow-x:auto;scrollbar-width:thin;margin:0;padding:10px;font:11px/1.8 Consolas,"JetBrains Mono",monospace;tab-size:2}#cm-ui .edu-code pre code{background:none;padding:0;font:inherit;white-space:pre;overflow-wrap:normal}#cm-ui .edu-table-scroll{max-width:100%;overflow-x:auto;margin:10px 0;scrollbar-width:thin}#cm-ui .edu-md table{border-collapse:collapse;width:100%;font-size:11px;white-space:normal}#cm-ui .edu-md th,#cm-ui .edu-md td{padding:6px 8px;border:1px solid var(--cm-line);text-align:left}#cm-ui .edu-md th{background:var(--cm-bg);font-weight:600}#cm-ui .edu-resource{margin-top:15px;padding-top:10px;border-top:1px solid var(--cm-line);font-size:11px;color:var(--cm-muted)}
+#cm-ui .edu-thread{display:grid;gap:18px;background:var(--cm-bg);border-radius:7px;padding:14px 9px;margin-top:14px}#cm-ui .edu-turn{display:flex;align-items:flex-start;gap:7px;min-width:0}#cm-ui .edu-turn-user{flex-direction:row-reverse}#cm-ui .edu-turn-avatar{display:grid;place-items:center;flex-shrink:0;width:22px;height:22px;margin-top:22px;border-radius:50%;background:light-dark(#637780,#5b6f78);color:white;font-size:9px;font-weight:600}#cm-ui .edu-turn-user .edu-turn-avatar{background:light-dark(#178274,#438e80)}#cm-ui .edu-turn-main{min-width:0;max-width:calc(100% - 29px)}#cm-ui .edu-turn-user .edu-turn-main{max-width:85%}#cm-ui .edu-turn-meta{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:10px;color:var(--cm-muted);flex-wrap:wrap}#cm-ui .edu-turn-user .edu-turn-meta{justify-content:flex-end}#cm-ui .edu-turn-meta time{font-variant-numeric:tabular-nums;font-size:9px}#cm-ui .edu-bubble{padding:10px;border:1px solid var(--cm-line);border-radius:9px 9px 9px 2px;background:var(--cm-panel);box-shadow:0 1px 2px #00000003}#cm-ui .edu-turn-user .edu-bubble{border-radius:9px 9px 2px 9px;border-color:light-dark(#d7e8e4,#36554e);background:light-dark(#eaf4f2,#283e38)}#cm-ui .edu-bubble .edu-md{font-size:12px;line-height:1.8}#cm-ui .edu-thread-note{font-size:10px;color:var(--cm-muted);text-align:center;padding:12px 0 2px}#cm-ui .edu-format-note{font-size:10px;color:var(--cm-muted);margin:6px 0 12px}
 @media(max-width:420px){body{padding:6px 0}#cm-ui .edu-preview{font-size:11px;margin-bottom:12px}#cm-ui .edu-window{min-height:540px;max-height:none;height:780px}#cm-ui .cm-nav{gap:5px}#cm-ui .cm-nav button{font-size:12px;padding:5px 8px}}
 </style>
 <div class="cm-stage">
-<div class="cm-nav" aria-label="预览页面"><button data-view="education" aria-pressed="true">课程任务</button><button data-view="home" aria-pressed="false">账号与使用概览</button><button data-view="login" aria-pressed="false">未登录</button><button data-view="settings" aria-pressed="false">插件设置</button></div>
+<div class="cm-nav" aria-label="预览页面"><button data-view="home" aria-pressed="true">账号与使用概览 · 默认首页</button><button data-view="education" aria-pressed="false">课程任务</button><button data-view="login" aria-pressed="false">未登录</button><button data-view="settings" aria-pressed="false">插件设置</button></div>
 <div class="edu-preview"><span>IDEA 工具窗口原型 · 示例数据</span><div><label>侧栏宽度 <select id="edu-width"><option value="390">390 px</option><option value="320">320 px</option><option value="520">520 px</option></select></label><button id="edu-theme" aria-pressed="false">深色预览</button></div></div>
-<section data-page="education" class="cm-window cm-tool edu-window">
+<section data-page="education" class="cm-window cm-tool edu-window" hidden>
   <header class="cm-bar"><div class="cm-brand"><span class="cm-logo">C</span>CourseMind</div><div class="edu-tools"><button id="edu-refresh" class="edu-icon" title="刷新课程与会话" aria-label="刷新课程与会话">↻</button><button data-open-settings class="edu-icon" title="插件设置" aria-label="打开插件设置">⚙</button></div></header>
   <div class="edu-identity"><span><i class="edu-dot"></i>张同学 <span class="cm-muted">· 20240105001</span></span><button class="cm-link" data-view="home">账号</button></div>
   <div class="edu-heading"><h1>课程任务</h1></div>
@@ -54,7 +58,7 @@
   <footer class="edu-status"><span><i class="edu-dot"></i>采集正常</span><span id="edu-sync-time">最近同步 15:03</span></footer>
   <div id="edu-overlay" class="edu-overlay" hidden><section class="edu-sheet" role="dialog" aria-modal="true" aria-labelledby="edu-sheet-title" tabindex="-1"><div class="edu-sheet-heading"><h2 id="edu-sheet-title">关联课程任务</h2><button id="edu-close-sheet" class="edu-icon" aria-label="关闭关联窗口">×</button></div><p class="cm-muted" id="edu-sheet-summary"></p><label class="cm-field">选择任务<select id="edu-link-task"></select></label><fieldset class="edu-action"><legend class="edu-sr">关联操作</legend><label><input type="radio" name="edu-action" value="add" checked>添加关联</label><label><input type="radio" name="edu-action" value="remove">解除关联</label></fieldset><div class="edu-scope-note">关联整个会话，包含后续内容。<br>关联不会将任务标记为完成。</div><div id="edu-link-preview" class="edu-link-preview" hidden></div><div class="edu-sheet-footer"><button id="edu-cancel-sheet">取消</button><button id="edu-confirm-link" class="cm-primary">预览变更</button></div></section></div>
 </section>
-<section data-page="home" class="cm-window cm-tool" hidden>
+<section data-page="home" class="cm-window cm-tool">
 <header class="cm-bar"><div class="cm-brand"><span class="cm-logo">C</span>CourseMind</div><div class="edu-tools"><button class="cm-link" data-view="education">课程任务</button><button data-open-settings aria-label="打开插件设置">⚙</button></div></header>
 <div class="cm-content">
 <div class="cm-card"><div class="cm-person"><div class="cm-avatar">张</div><div><div class="cm-name">张同学</div><div class="cm-muted">学号 20240105001</div></div></div><div class="cm-rule"></div><div class="cm-row"><span class="cm-muted">班级</span><span>24级计科5班</span></div><div class="cm-row" style="margin-top:7px"><span class="cm-muted">账号状态</span><span class="cm-status">● 已登录</span></div><div class="cm-rule"></div><div class="cm-row"><button class="cm-link" id="cm-change">修改密码</button><button class="cm-link" id="cm-logout">退出登录</button></div></div>
@@ -126,6 +130,31 @@
   const selected = new Set();
   const taskById = id => tasks.find(task => task.id === Number(id));
   const message = text => { $('#edu-message').textContent = text; };
+  const codeBlock = (language, source) => `<section class="edu-code"><div class="edu-code-head"><span>${escape(language)}</span><button class="cm-link" data-copy-code aria-label="复制 ${escape(language)} 代码">复制</button></div><pre><code>${escape(source)}</code></pre></section>`;
+  function taskMarkdown(task) {
+    if (task.id !== 1) return `<h3>任务目标</h3><p>${escape(task.summary)}</p><h3>实践要求</h3><ol><li>先整理<strong>实现思路</strong>和关键场景。</li><li>使用 CodeBuddy 辅助编码，在 IDEA 中运行并验证。</li><li>将相关 AI 对话关联到本任务。</li></ol><blockquote>请保留讨论与排错过程，方便回顾学习思路。</blockquote>`;
+    return `<h3>本机试点任务</h3><p>在 Java 项目中，使用 CodeBuddy 实现 <code>GET /greet?name=</code> 参数校验。</p><h3>实现要求</h3><ol><li><strong>有效参数：</strong>返回 200 和 UTF-8 JSON。</li><li>name 缺失或空白时，返回 <code>400</code>。</li><li>其他请求方法返回 <code>405</code>，并设置 <code>Allow: GET</code>。</li><li>正确处理中文与 JSON 字符串转义。</li></ol><h3>请求示例</h3>${codeBlock('HTTP', 'GET /greet?name=小明 HTTP/1.1\nAccept: application/json')}${codeBlock('JSON', '{\n  "greeting": "你好，小明"\n}')}<h3>验证清单</h3><div class="edu-table-scroll"><table><thead><tr><th>场景</th><th>预期结果</th></tr></thead><tbody><tr><td>name 为“小明”</td><td>200 · JSON</td></tr><tr><td>name 为空白</td><td>400</td></tr><tr><td>使用 POST</td><td>405 · Allow: GET</td></tr></tbody></table></div><blockquote>关联整个会话，包含后续内容；<strong>关联不代表任务完成。</strong></blockquote><div class="edu-resource">参考资料 · <a href="#edu-task-note" data-demo-link>HTTP 请求与状态码说明 ↗</a></div>`;
+  }
+  function conversation(chat) {
+    if (chat.id === 1) return [
+      {role:'user', at:'15:01:05', html:'<p>我正在实现 <code>GET /greet?name=</code>。name 缺失或空白时，应该怎么处理？</p>'},
+      {role:'ai', at:'15:01:18', html:'<p>可以先做<strong>参数校验</strong>，再处理正常响应。</p><ol><li>读取 <code>name</code> 参数。</li><li>检查是否为 null 或空白。</li><li>无效时返回 400，结束请求。</li></ol>' + codeBlock('Java', 'if (name == null || name.isBlank()) {\n  sendJson(exchange, 400,\n      "{\\"error\\":\\"name 不能为空\\"}");\n  return;\n}')},
+      {role:'user', at:'15:02:03', html:'<p>明白了。那其他请求方法呢？请给我一个<strong>验证清单</strong>。</p>'},
+      {role:'ai', at:'15:02:21', html:'<p>仅允许 <code>GET</code>。其他方法返回 405，并设置 <code>Allow: GET</code>。</p><div class="edu-table-scroll"><table><thead><tr><th>请求</th><th>状态码</th></tr></thead><tbody><tr><td>有效 name</td><td>200</td></tr><tr><td>缺失 / 空白</td><td>400</td></tr><tr><td>POST /greet</td><td>405</td></tr></tbody></table></div><blockquote>先验证边界条件，再检查中文和 JSON 转义。</blockquote>'}
+    ];
+    const answers = {
+      2: '<h4>先检查映射范围</h4><p>确认过滤器配置覆盖了实际请求路径，再检查注册是否生效。</p>' + codeBlock('Java', '@WebFilter("/*")\npublic class LoginFilter implements Filter {\n  // 校验登录状态后，再决定是否放行\n}'),
+      3: '<p><strong>Cookie</strong> 保存在浏览器，<strong>Session</strong> 数据保存在服务端。</p><ul><li>浏览器通常通过 Cookie 传递会话标识。</li><li>服务端使用标识查找对应会话。</li></ul><blockquote>不要把敏感信息直接存入明文 Cookie。</blockquote>',
+      4: '<p>按学号查找可以使用 <code>Map</code>；需要保留录入顺序时，可以考虑 <code>LinkedHashMap</code>。</p>' + codeBlock('Java', 'Map<String, Student> students =\n    new LinkedHashMap<>();')
+    };
+    return [{role:'user', at:chat.time === '昨天' ? '16:10:05' : chat.time + ':05', html:`<p>${escape(chat.title)}</p>`},
+      {role:'ai', at:chat.time === '昨天' ? '16:10:18' : chat.time + ':18', html:answers[chat.id]}];
+  }
+  function chatBubbles(chat) {
+    const date = chat.time === '昨天' ? '2026/10/23' : '2026/10/24';
+    return `<div class="edu-thread" aria-label="对话消息，按时间排序">${conversation(chat).map(turn => `<article class="edu-turn ${turn.role === 'user' ? 'edu-turn-user' : 'edu-turn-ai'}" aria-label="${turn.role === 'user' ? '用户' : 'AI'}消息 ${turn.at}"><span class="edu-turn-avatar" aria-hidden="true">${turn.role === 'user' ? 'U' : 'AI'}</span><div class="edu-turn-main"><div class="edu-turn-meta"><span>${turn.role === 'user' ? '你' : 'CodeBuddy'}</span><time>${date} ${turn.at}</time></div><div class="edu-bubble"><div class="edu-md">${turn.html}</div></div></div></article>`).join('')}</div><div class="edu-thread-note">北京时间 · 按消息发生时间排列 · 示例对话</div>`;
+  }
+  chats.forEach(chat => { chat.count = conversation(chat).length; });
   function updateSelection() {
     $('#edu-selection').hidden = !selectMode || tab !== 'chats' || detail !== null;
     $('#edu-selected-count').textContent = selected.size;
@@ -170,11 +199,11 @@
       <button class="cm-link edu-back" data-back>‹ 返回${tab === 'tasks' ? '任务列表' : '我的对话'}</button>
       <div class="edu-item-top"><span>${task.courseName}</span><span class="edu-chip ${task.tone}">${task.status}</span></div>
       <h2 class="edu-detail-heading">${task.title}</h2><div class="edu-detail-meta">${task.kind} · ${task.group} · 陈老师<br>${task.due} · 北京时间</div>
-      <div class="edu-detail-copy"><h3>任务目标</h3><p>${task.summary}</p>${task.id === 1 ? '<h3>实现要求</h3><ol><li>实现 <code>GET /greet?name=</code>，返回 UTF-8 JSON。</li><li>name 缺失或为空白时，返回 400。</li><li>其他请求方法返回 405，并设置 Allow: GET。</li><li>使用 CodeBuddy 辅助实现，在 IDEA 中运行并验证。</li></ol><h3>学习记录</h3><p>完成实践后，将相关 AI 对话关联到本任务，方便自己回顾，也方便教师了解学习过程。</p>' : '<h3>实践要求</h3><p>先梳理实现思路，再借助 AI 完成编码。请在 IDEA 中运行并验证关键场景，保留讨论与排错过程。</p>'}</div>
+      <div class="edu-format-note">任务说明 · Markdown 排版</div><div class="edu-detail-copy edu-md">${taskMarkdown(task)}</div>
       <div class="edu-detail-actions">${task.writable ? `<button class="cm-primary" data-task-chats="${task.id}">关联已有 AI 对话</button><div class="edu-secondary"><button class="cm-link" data-set-hint="${task.id}">设为当前任务提示</button><button class="cm-link" data-web>在网页查看 ↗</button></div>` : '<div class="edu-scope-note">任务已关闭，保留原有对话关联，可继续查看。</div><button data-web>在网页查看 ↗</button>'}</div>` : `
       <button class="cm-link edu-back" data-back>‹ 返回我的对话</button><div class="edu-item-top"><span>CodeBuddy · 今天 ${chat.time}</span><span>${chat.count} 条消息</span></div><h2 class="edu-detail-heading">${chat.title}</h2>
       <div class="edu-tags">${chat.links.length ? chat.links.map(id => `<button class="edu-task-tag" data-task-detail="${id}">${taskById(id).title}</button>`).join('') : '<span class="edu-chip">未关联任务</span>'}</div>
-      <div class="edu-detail-copy"><h3>你</h3><p>${chat.title}</p><h3>CodeBuddy</h3><p>${chat.preview}</p><div class="edu-scope-note">原型仅展示消息预览；完整对话在教学工作台查看。</div></div><div class="edu-detail-actions"><button class="cm-primary" data-edit-chat="${chat.id}">整理任务关联</button><button class="cm-link" data-web>在网页查看完整对话 ↗</button></div>`;
+      ${chatBubbles(chat)}<div class="edu-detail-actions"><button class="cm-primary" data-edit-chat="${chat.id}">整理任务关联</button><button class="cm-link" data-web>在网页查看完整对话 ↗</button></div>`;
     $('#edu-browser').scrollTop = 0; updateSelection(); $('#edu-detail-screen [data-back]').focus();
   }
   function closeSheet() { $('#edu-overlay').hidden = true; prepared = null; dialogOpener?.focus(); }
@@ -199,7 +228,14 @@
   $('#edu-batch-link').onclick = () => openSheet([...selected]);
   $('#edu-items').onchange = event => { const id = Number(event.target.dataset.chatSelect); if (!id) return; event.target.checked ? selected.add(id) : selected.delete(id); event.target.closest('article').classList.toggle('edu-selected', selected.has(id)); updateSelection(); };
   $('#edu-browser').onclick = event => {
+    if (event.target.closest('[data-demo-link]')) { event.preventDefault(); message('原型演示：实际插件将打开任务中的参考资料。'); return; }
     const button = event.target.closest('button'); if (!button) return;
+    if (button.hasAttribute('data-copy-code')) {
+      const source = button.closest('.edu-code').querySelector('pre code').textContent;
+      if (!navigator.clipboard) { message('当前浏览器不支持复制，可直接选择代码文本。'); return; }
+      navigator.clipboard.writeText(source).then(() => { button.textContent = '已复制'; }).catch(() => message('复制未完成，可直接选择代码文本。'));
+      return;
+    }
     if (button.hasAttribute('data-task-detail')) openDetail('task', button.dataset.taskDetail);
     if (button.hasAttribute('data-chat-detail')) openDetail('chat', button.dataset.chatDetail);
     if (button.hasAttribute('data-back')) { detail = null; $('#edu-list-screen').hidden = false; $('#edu-detail-screen').hidden = true; renderList(); }
