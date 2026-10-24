@@ -16,6 +16,9 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.net.URLEncoder;
+import java.util.List;
+import top.chende.coursemind.education.EducationData;
 
 /**
  * 服务端访问层：只做请求、解析与错误映射，不触碰 UI 或持久化。
@@ -99,7 +102,45 @@ public final class ApiClient {
                 className == null ? "" : className, classroom == null ? "" : classroom, environmentId, accountId);
     }
 
-    private @NotNull JsonObject request(@NotNull String method,
+    public EducationData.Page<EducationData.Group> teachingGroups(String token, int page) {
+        return EducationData.page(requestData("GET", "/api/v1/education/teaching-groups?page_size=100&page=" + page, token, null), EducationData::group);
+    }
+    public EducationData.Page<EducationData.Task> tasks(String token, int page, Integer groupId) {
+        return EducationData.page(requestData("GET", "/api/v1/education/tasks?page_size=20&page=" + page
+                + (groupId == null ? "" : "&group_id=" + groupId), token, null), EducationData::task);
+    }
+    public EducationData.Task task(String token, int id) {
+        return EducationData.task(request("GET", "/api/v1/education/tasks/" + id, token, null));
+    }
+    public EducationData.Page<EducationData.Session> sessions(String token, int page, Integer taskId, String query) {
+        return EducationData.page(requestData("GET", "/api/v1/education/sessions?page_size=20&page=" + page
+                + (taskId == null ? "" : "&task_id=" + taskId)
+                + (query == null || query.isBlank() ? "" : "&q=" + URLEncoder.encode(query, StandardCharsets.UTF_8)), token, null), EducationData::session);
+    }
+    public EducationData.Session session(String token, long id) {
+        return EducationData.session(request("GET", "/api/v1/education/sessions/" + id, token, null));
+    }
+    public List<EducationData.Task> sessionTasks(String token, long id) {
+        return EducationData.list(requestData("GET", "/api/v1/education/sessions/" + id + "/tasks", token, null), EducationData::task);
+    }
+    public List<EducationData.LinkResult> sessionLinks(String token, String action, List<EducationData.Pair> pairs) {
+        if (!("add".equals(action) || "remove".equals(action)) || pairs.isEmpty() || pairs.size() > 200)
+            throw new IllegalArgumentException("请选择 1–200 对会话与任务");
+        JsonObject body = new JsonObject(); body.addProperty("action", action); JsonArray items = new JsonArray();
+        for (var pair : pairs) {
+            if (pair.taskId() <= 0 || pair.sessionId() <= 0) throw new IllegalArgumentException("无效的任务或会话 ID");
+            JsonObject item = new JsonObject(); item.addProperty("task_id", pair.taskId()); item.addProperty("session_id", pair.sessionId()); items.add(item);
+        }
+        body.add("pairs", items);
+        return EducationData.list(request("POST", "/api/v1/education/session-links/batch", token, body).get("results"), EducationData::result);
+    }
+
+    private @NotNull JsonObject request(String method, String path, String token, JsonObject body) {
+        JsonElement result = requestData(method, path, token, body);
+        return result.isJsonObject() ? result.getAsJsonObject() : new JsonObject();
+    }
+
+    private @NotNull JsonElement requestData(@NotNull String method,
                                         @NotNull String path,
                                         @Nullable String token,
                                         @Nullable JsonObject body) {
@@ -136,11 +177,13 @@ public final class ApiClient {
         String message = envelope == null ? null : string(envelope, "message");
 
         if (status / 100 != 2 || code != 0) {
+            if (status == 404 && path.startsWith("/api/v1/education/"))
+                throw new ApiException("对象不存在或无权访问，请刷新课程与会话", status, false, null);
             throw new ApiException(mapError(status, message, validationDetail(text)),
                     status, status == 401 || status == 403, null);
         }
         JsonElement data = envelope.get("data");
-        return data != null && data.isJsonObject() ? data.getAsJsonObject() : new JsonObject();
+        return data == null ? com.google.gson.JsonNull.INSTANCE : data;
     }
 
     private static @Nullable JsonObject parseObject(@NotNull String text) {

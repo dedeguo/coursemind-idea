@@ -71,6 +71,7 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
     private final PasswordChangePanel passwordChange = new PasswordChangePanel(this::changePassword);
     private final UsagePanel usage = new UsagePanel(this::refreshAsync);
     private final StatsController statsController;
+    private final TeachingPanel teaching;
     private StatsController.Scope statsScope;
     private long statusGeneration;
     private boolean started;
@@ -85,6 +86,7 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
 
     CourseMindPanel(@NotNull Project project) {
         this.project = project;
+        teaching = new TeachingPanel(project, this::onEdt, this::refreshAsync);
         statsController = new StatsController(task -> ApplicationManager.getApplication().executeOnPooledThread(task),
                 this::onEdt, usage::render, java.time.Clock.systemUTC());
         buildUi();
@@ -161,7 +163,7 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
         JBLabel footerText = new JBLabel("CourseMind · 让学习过程看得见");
         footerText.setForeground(JBColor.GRAY);
         footer.add(footerText);
-        return CourseMindUi.stack(16, card, passwordChange.component(), usage.component(), footer);
+        return CourseMindUi.stack(16, card, passwordChange.component(), usage.component(), teaching.component(), footer);
     }
 
     private @NotNull JPanel buildErrorCard() {
@@ -216,6 +218,8 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
             identityName.setToolTipText(null); identityClass.setToolTipText(null); identityAvatar.setText("C");
         }
         displayedKey = nextKey; displayedSessionId = nextSessionId;
+        teaching.bind(snapshot.state() == AuthService.State.LOGGED_IN ? snapshot.session() : null,
+                CourseMindSettings.getInstance().connection());
         if (snapshot.state() != AuthService.State.LOGGED_IN) {
             statsScope = null; statusGeneration++; statsController.bind(null); usage.clear();
         }
@@ -245,6 +249,7 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
                 cards.show(cardPanel, CARD_IDENTITY);
                 if (snapshot.message() != null) identityMessage.setText(snapshot.message());
                 if (started && snapshot.session() != null) refreshSummary(snapshot.session());
+                if (started && snapshot.session() != null) teaching.refresh();
             }
             case EXPIRED -> {
                 statusLabel.setText("登录已过期");
@@ -418,6 +423,7 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
     }
     @Override public void dispose() {
         disposed = true; statusGeneration++; statsController.close(); usage.clear();
+        teaching.close();
         passwordField.setText(""); passwordChange.close();
     }
     /** 工具窗口在模态对话框打开时也要能刷新，因此显式使用 {@link ModalityState#any()}。 */
