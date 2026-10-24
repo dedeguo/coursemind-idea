@@ -16,6 +16,8 @@ import top.chende.coursemind.config.ConnectionProfile;
 import top.chende.coursemind.education.*;
 import top.chende.coursemind.education.EducationData.*;
 import top.chende.coursemind.ui.CourseMindUi;
+import top.chende.coursemind.ui.MarkdownView;
+import top.chende.coursemind.ui.MessageBubble;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -184,13 +186,21 @@ final class TeachingPanel implements AutoCloseable {
     private void showTask() {
         Task task = selectedTask; if (task == null) { show(LIST); return; }
         JButton back = CourseMindUi.link(chats ? "‹ 返回我的对话" : "‹ 返回任务列表"); back.addActionListener(e -> { tasks.clearSelection(); show(LIST); });
-        JTextArea description = CourseMindUi.note(task.markdown() + (task.resources().isEmpty() ? "" : "\n\n资源链接：\n" + String.join("\n", task.resources()))); description.setForeground(JBColor.foreground());
+        JComponent description = new MarkdownView(task.markdown(), browser);
         JButton associate = new JButton("关联已有 AI 对话"); associate.setVisible(task.linkable());
         JButton suggest = CourseMindUi.link("设为当前任务提示"); suggest.setVisible(task.linkable()); suggest.addActionListener(e -> setHint(task));
         JButton web = CourseMindUi.link("在网页查看 ↗"); web.addActionListener(e -> openTask(task));
         associate.addActionListener(e -> { chats = true; chatTab.setSelected(true); onlyTask.setSelected(false); query.setText(""); selecting = true; sessions.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION); sessions.clearSelection(); show(LIST); filterTasks(); message.setText("请选择相关对话，再点击底部“关联任务”。"); });
         JPanel body = CourseMindUi.stack(12, back, muted(task.course() + " · " + task.group()), title(task.title()), CourseMindUi.note(task.metadata()), description, associate, suggest, web,
             CourseMindUi.note(task.linkable() ? "关联整个会话，包含后续内容；关联不代表任务完成。" : "任务已关闭、移除或归档，原有对话关联保留。"));
+        if (!task.resources().isEmpty()) {
+            JPanel resources = CourseMindUi.stack(5, CourseMindUi.title("参考资料"));
+            for (String url : task.resources()) {
+                JButton resource = CourseMindUi.link(url); resource.putClientProperty("html.disable", true); resource.setHorizontalAlignment(SwingConstants.LEFT);
+                resource.setEnabled(MarkdownView.safeUrl(url)); resource.addActionListener(e -> browser.accept(url)); resources.add(resource);
+            }
+            body.add(resources);
+        }
         taskScreen.removeAll(); taskScreen.add(CourseMindUi.scroll(body), BorderLayout.CENTER); show(TASK);
     }
     private void setHint(Task task) { hint.setText("当前任务提示 · " + task.title() + "\n仅提示当前窗口，不会自动关联对话。"); hintPanel.setVisible(true); root.revalidate(); }
@@ -204,7 +214,7 @@ final class TeachingPanel implements AutoCloseable {
         Session session = selectedSession; if (session == null) return;
         JButton back = CourseMindUi.link("‹ 返回我的对话"); back.addActionListener(e -> show(LIST));
         JPanel body = CourseMindUi.stack(10, back, muted(session.source() + " · " + EducationData.time(session.lastAt())), title(session.title()), CourseMindUi.note(taskLabels(session)));
-        for (ChatMessage record : data.items()) body.add(CourseMindUi.stack(5, CourseMindUi.title("user".equals(record.role()) ? "你" : "AI"), CourseMindUi.note(record.text())));
+        for (ChatMessage record : data.items()) body.add(new MessageBubble(record, browser));
         body.add(CourseMindUi.note("显示前 " + data.items().size() + " 条消息，共 " + data.total() + " 条；完整对话可在网页查看。"));
         JButton associate = new JButton("整理任务关联"); associate.addActionListener(e -> openLinks(List.of(selectedSession)));
         JButton web = CourseMindUi.link("在网页查看完整对话 ↗"); web.addActionListener(e -> openSession(session)); body.add(associate); body.add(web);

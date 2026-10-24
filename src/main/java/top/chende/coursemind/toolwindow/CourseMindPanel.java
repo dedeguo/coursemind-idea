@@ -55,7 +55,7 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
     private final JPanel cardPanel = new JPanel(cards);
     private final CardLayout identityLayout = new CardLayout();
     private final JPanel identityViews = new JPanel(identityLayout);
-    private final JButton backToTeaching = CourseMindUi.link("‹ 返回课程任务");
+    private final JButton backToTeaching = CourseMindUi.link("课程任务 →");
 
     private final JTextArea statusLabel = CourseMindUi.note("正在读取登录状态…");
 
@@ -261,7 +261,7 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
                 renderSession(snapshot.session());
                 boolean education = snapshot.session() != null && snapshot.session().environmentId() != null;
                 backToTeaching.setVisible(education);
-                if (changed) identityLayout.show(identityViews, education ? "teaching" : "overview");
+                if (changed) identityLayout.show(identityViews, "overview");
                 cards.show(cardPanel, CARD_IDENTITY);
                 if (snapshot.message() != null) identityMessage.setText(snapshot.message());
                 if (started && snapshot.session() != null) refreshSummary(snapshot.session());
