@@ -7,10 +7,55 @@
 #cm-ui .cm-usage-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;border:0;background:transparent;padding:0;text-align:left;font-weight:600}#cm-ui .cm-usage-toggle span:first-child{display:flex;align-items:center;gap:8px}#cm-ui .cm-topic{display:flex;justify-content:space-between;margin-top:9px}#cm-ui .cm-session{display:block;width:100%;text-align:left;border:0;border-radius:4px;background:transparent;padding:10px 0;border-bottom:1px solid var(--cm-line)}#cm-ui .cm-session:hover{background:var(--cm-hover)}#cm-ui .cm-session-title{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:4px;color:var(--cm-blue)}#cm-ui .cm-badge{padding:2px 7px;border-radius:10px;background:var(--cm-bg);color:var(--cm-muted);font-size:12px}#cm-ui .cm-detail{background:var(--cm-bg);padding:12px;border-radius:5px;margin-top:12px}#cm-ui .cm-detail p{margin:8px 0;overflow-wrap:anywhere}#cm-ui .cm-metric{text-align:center}#cm-ui .cm-tool{max-width:390px}
 #cm-ui .cm-tool-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--cm-line);flex-wrap:wrap}#cm-ui .cm-tool-row label{display:flex;align-items:center;gap:9px}#cm-ui .cm-network{display:flex;gap:18px;margin-top:14px;flex-wrap:wrap}#cm-ui .cm-network label{display:flex;align-items:center;gap:6px}#cm-ui input[type=radio]{width:auto}#cm-ui .cm-address{overflow-wrap:anywhere}#cm-ui .cm-warning{color:light-dark(#916800,#e6b961)}
 </style>
+<style>
+#cm-ui .edu-preview{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 0 20px;color:var(--cm-muted);font-size:12px}
+#cm-ui .edu-preview>div{display:flex;align-items:center;gap:10px}#cm-ui .edu-preview label{display:flex;align-items:center;gap:8px;white-space:nowrap}#cm-ui .edu-preview select{width:90px;padding:4px 8px}#cm-ui .edu-preview button{font-size:12px;padding:4px 9px}
+#cm-ui .edu-window{width:100%;max-width:var(--edu-width,390px);height:800px;max-height:calc(100dvh - 180px);min-height:540px;display:flex;flex-direction:column;position:relative;font-size:13px;background:var(--cm-panel);box-shadow:0 8px 32px #0000000b}
+#cm-ui .edu-window .cm-bar{padding:10px 14px;background:var(--cm-bg)}#cm-ui .edu-tools{display:flex;gap:4px}#cm-ui .edu-icon{display:grid;place-items:center;min-width:28px;height:28px;padding:0;border-color:transparent;background:transparent;font-size:19px;line-height:1}
+#cm-ui .edu-icon:hover{background:var(--cm-hover);color:var(--cm-blue)}#cm-ui .edu-identity{display:flex;align-items:center;justify-content:space-between;padding:9px 16px 0;font-size:12px}#cm-ui .edu-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:light-dark(#258064,#72bd9e);margin-right:6px;vertical-align:middle}
+#cm-ui .edu-heading{padding:10px 16px 8px}#cm-ui .edu-heading h1{margin:0;font-size:16px;letter-spacing:-.3px;line-height:1.5}
+#cm-ui .edu-tabs{display:flex;border-bottom:1px solid var(--cm-line);padding:0 16px;gap:24px;flex-shrink:0}#cm-ui .edu-tabs button{border:0;border-radius:0;background:none;padding:10px 0 11px;color:var(--cm-muted);position:relative;font-weight:500;font-size:13px}#cm-ui .edu-tabs button[aria-selected=true]{color:var(--cm-blue)}#cm-ui .edu-tabs button[aria-selected=true]:after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--cm-blue)}#cm-ui .edu-tabs span{font-size:11px;margin-left:4px;padding:1px 5px;background:var(--cm-bg);border-radius:4px;color:var(--cm-muted)}
+#cm-ui .edu-body{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;padding:14px 14px 0}#cm-ui .edu-filters{display:grid;gap:9px}#cm-ui .edu-filters select{font-size:12px;height:32px;padding:5px 9px;background:var(--cm-bg)}#cm-ui .edu-search{display:flex;align-items:center;position:relative}#cm-ui .edu-search svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5;color:var(--cm-muted);position:absolute;left:9px}#cm-ui .edu-search input{padding:6px 8px 6px 30px;font-size:12px;height:32px}#cm-ui input::placeholder{color:var(--cm-muted);opacity:.8}
+#cm-ui .edu-list-meta{display:flex;justify-content:space-between;align-items:center;margin:15px 0 9px;color:var(--cm-muted);font-size:11px;min-height:20px}#cm-ui .edu-list-meta button{font-size:12px}#cm-ui .edu-items{display:grid;gap:9px}
+#cm-ui .edu-item{border:1px solid var(--cm-line);border-radius:7px;background:var(--cm-panel);padding:12px;position:relative;transition:background .12s,border-color .12s}#cm-ui .edu-item:hover{border-color:var(--cm-blue);background:color-mix(in srgb,var(--cm-hover) 28%,var(--cm-panel))}#cm-ui .edu-item-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;font-size:11px;color:var(--cm-muted)}#cm-ui .edu-course-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%}
+#cm-ui .edu-chip{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:500;background:var(--cm-bg);color:var(--cm-muted)}#cm-ui .edu-green{color:light-dark(#26714f,#8dce9f);background:light-dark(#edf7f0,#253d31)}#cm-ui .edu-amber{color:light-dark(#946200,#dfbd75);background:light-dark(#fff7e6,#423922)}#cm-ui .edu-blue{color:var(--cm-blue);background:var(--cm-hover)}
+#cm-ui .edu-item-title{display:block;padding:0;text-align:left;border:0;background:none;font-size:13px;font-weight:600;line-height:1.6;overflow-wrap:anywhere;color:inherit;width:100%}#cm-ui .edu-item-title:hover{color:var(--cm-blue)}#cm-ui .edu-item-summary{margin:5px 0 0;color:var(--cm-muted);font-size:12px;line-height:1.6;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}#cm-ui .edu-item-bottom{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:10px;font-size:11px;color:var(--cm-muted)}#cm-ui .edu-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}#cm-ui .edu-task-tag{font-size:11px;color:var(--cm-blue);background:var(--cm-hover);border:0;padding:3px 6px;border-radius:4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+#cm-ui .edu-chat-content{min-width:0;flex:1}#cm-ui .edu-chat-card{display:flex;gap:9px}#cm-ui .edu-chat-card>input{align-self:flex-start;accent-color:var(--cm-blue);margin:5px 0 0;flex-shrink:0}#cm-ui .edu-selected{border-color:var(--cm-blue);background:var(--cm-hover)}#cm-ui .edu-paging{font-size:11px;color:var(--cm-muted);text-align:center;padding:18px 0}#cm-ui .edu-empty{text-align:center;padding:35px 8px;color:var(--cm-muted);font-size:12px}#cm-ui .edu-empty>span{display:block;font-size:32px;font-weight:300;margin-bottom:12px}#cm-ui .edu-empty strong{display:block;color:inherit;font-size:13px}
+#cm-ui .edu-status{border-top:1px solid var(--cm-line);display:flex;justify-content:space-between;gap:8px;padding:9px 14px;background:var(--cm-bg);font-size:11px;color:var(--cm-muted);flex-shrink:0}#cm-ui .edu-message:empty{display:none}#cm-ui .edu-message{padding:8px 14px;font-size:12px;background:var(--cm-hover);color:var(--cm-blue);border-top:1px solid var(--cm-line)}
+#cm-ui .edu-filters:has(#edu-chat-filters:not([hidden])){grid-template-columns:minmax(0,1fr) 108px}#cm-ui .edu-filters>select{grid-column:1/-1}#cm-ui .edu-chat-content .edu-item-title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+#cm-ui .edu-back{margin-bottom:14px}#cm-ui .edu-detail-heading{margin:10px 0 6px;font-size:17px;line-height:1.6;letter-spacing:-.2px}#cm-ui .edu-detail-meta{font-size:11px;color:var(--cm-muted);line-height:1.8;padding-bottom:14px;border-bottom:1px solid var(--cm-line)}#cm-ui .edu-detail-copy{font-size:12px;line-height:1.9;padding:8px 0}#cm-ui .edu-detail-copy h3{font-size:13px;margin:14px 0 6px}#cm-ui .edu-detail-copy p{margin:6px 0}#cm-ui .edu-detail-copy ol{padding-left:19px;margin:6px 0}#cm-ui .edu-detail-copy code{background:var(--cm-bg);border-radius:3px;padding:2px 4px;font-size:11px;overflow-wrap:anywhere}#cm-ui .edu-detail-actions{display:grid;gap:8px;margin:15px 0}#cm-ui .edu-detail-actions button{font-size:12px}#cm-ui .edu-detail-actions .edu-secondary{display:flex;gap:12px;justify-content:center}#cm-ui .edu-detail-actions .cm-link{font-size:11px}
+#cm-ui .edu-hint{padding:9px 14px;background:var(--cm-hover);border-bottom:1px solid var(--cm-line);display:grid;grid-template-columns:1fr auto;gap:4px 7px;font-size:11px}#cm-ui .edu-hint strong{display:block;color:var(--cm-blue);font-weight:500}#cm-ui .edu-hint span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#cm-ui .edu-hint>div{min-width:0}#cm-ui .edu-hint small{grid-column:1/-1;color:var(--cm-muted);font-size:10px}
+#cm-ui .edu-selection{padding:10px 14px;border-top:1px solid var(--cm-line);background:var(--cm-bg)}#cm-ui .edu-selection-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:8px}#cm-ui .edu-selection>button{width:100%;font-size:12px}#cm-ui button:disabled{opacity:.45;cursor:not-allowed}#cm-ui button{cursor:pointer}#cm-ui button:focus-visible,#cm-ui select:focus-visible,#cm-ui input:focus-visible{outline:2px solid var(--cm-blue);outline-offset:2px}
+#cm-ui .edu-selection{display:flex;align-items:center;gap:12px}#cm-ui .edu-selection-top{flex:1;gap:8px;margin:0}#cm-ui .edu-selection-top button{font-size:11px}#cm-ui .edu-selection>button{width:auto;flex-shrink:0}
+#cm-ui .edu-overlay{position:absolute;inset:0;background:#10182866;z-index:3;display:flex;align-items:flex-end}#cm-ui .edu-sheet{width:100%;padding:18px 16px 14px;background:var(--cm-panel);border-top:1px solid var(--cm-line);border-radius:10px 10px 0 0;box-shadow:0 -8px 30px #00000018;max-height:95%;overflow:auto}#cm-ui .edu-sheet-heading{display:flex;justify-content:space-between;align-items:center}#cm-ui .edu-sheet h2{font-size:15px;margin:0}#cm-ui .edu-sheet .cm-field{font-size:12px}#cm-ui .edu-sheet select{font-size:12px}#cm-ui .edu-action{border:0;padding:0;margin:14px 0;display:flex;gap:18px;font-size:12px}#cm-ui .edu-action label{display:flex;align-items:center;gap:5px}#cm-ui .edu-action input{width:auto;accent-color:var(--cm-blue);margin:0}#cm-ui .edu-scope-note{background:var(--cm-bg);padding:10px;border-radius:5px;font-size:11px;line-height:1.8;color:var(--cm-muted)}#cm-ui .edu-link-preview{padding:10px;margin-top:10px;border:1px solid var(--cm-blue);border-radius:5px;background:var(--cm-hover);font-size:12px}#cm-ui .edu-sheet-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}#cm-ui .edu-sheet-footer button{font-size:12px}#cm-ui .edu-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@media(max-width:420px){body{padding:6px 0}#cm-ui .edu-preview{font-size:11px;margin-bottom:12px}#cm-ui .edu-window{min-height:540px;max-height:none;height:780px}#cm-ui .cm-nav{gap:5px}#cm-ui .cm-nav button{font-size:12px;padding:5px 8px}}
+</style>
 <div class="cm-stage">
-<div class="cm-nav" aria-label="预览页面"><button data-view="home" aria-pressed="true">已登录 · 工具窗口</button><button data-view="login" aria-pressed="false">未登录</button><button data-view="settings" aria-pressed="false">插件设置</button></div>
-<section data-page="home" class="cm-window cm-tool">
-<header class="cm-bar"><div class="cm-brand"><span class="cm-logo">C</span>CourseMind</div><button data-open-settings aria-label="打开插件设置">⚙</button></header>
+<div class="cm-nav" aria-label="预览页面"><button data-view="education" aria-pressed="true">课程与 AI 对话</button><button data-view="home" aria-pressed="false">账号与使用概览</button><button data-view="login" aria-pressed="false">未登录</button><button data-view="settings" aria-pressed="false">插件设置</button></div>
+<div class="edu-preview"><span>IDEA 工具窗口原型 · 示例数据</span><div><label>侧栏宽度 <select id="edu-width"><option value="390">390 px</option><option value="320">320 px</option><option value="520">520 px</option></select></label><button id="edu-theme" aria-pressed="false">深色预览</button></div></div>
+<section data-page="education" class="cm-window cm-tool edu-window">
+  <header class="cm-bar"><div class="cm-brand"><span class="cm-logo">C</span>CourseMind</div><div class="edu-tools"><button id="edu-refresh" class="edu-icon" title="刷新课程与会话" aria-label="刷新课程与会话">↻</button><button data-open-settings class="edu-icon" title="插件设置" aria-label="打开插件设置">⚙</button></div></header>
+  <div class="edu-identity"><span><i class="edu-dot"></i>张同学 <span class="cm-muted">· 20240105001</span></span><button class="cm-link" data-view="home">账号</button></div>
+  <div class="edu-heading"><h1>课程与 AI 对话</h1></div>
+  <div class="edu-tabs" role="tablist" aria-label="课程与对话"><button id="edu-task-tab" role="tab" aria-selected="true" aria-controls="edu-browser" data-edu-tab="tasks">课程任务 <span>3</span></button><button id="edu-chat-tab" role="tab" aria-selected="false" aria-controls="edu-browser" data-edu-tab="chats">我的对话 <span>4</span></button></div>
+  <div id="edu-hint" class="edu-hint" hidden><div><strong>当前任务提示</strong><span id="edu-hint-title"></span></div><button id="edu-clear-hint" class="edu-icon" aria-label="清除当前任务提示">×</button><small>仅提示当前窗口，不会自动关联对话。</small></div>
+  <div class="edu-body" id="edu-browser" role="tabpanel" aria-labelledby="edu-task-tab">
+    <div id="edu-list-screen">
+      <div class="edu-filters"><label class="edu-sr" for="edu-course">筛选课程与教学班</label><select id="edu-course"><option value="all">全部课程与教学班</option><option value="web">JavaWeb 开发技术 · 计科 2 班</option><option value="java">Java 程序设计 · 计科 2 班</option></select><label class="edu-search"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><path d="m12 12 5 5"/></svg><input id="edu-search" placeholder="搜索课程任务" aria-label="搜索课程任务或对话"></label><div id="edu-chat-filters" hidden><label class="edu-sr" for="edu-linked">筛选任务关联状态</label><select id="edu-linked"><option value="all">全部对话</option><option value="no">未关联任务</option><option value="yes">已关联任务</option></select></div></div>
+      <div class="edu-list-meta"><span id="edu-list-label">本学期 · 3 个任务</span><button id="edu-select-mode" class="cm-link" hidden>批量关联</button></div>
+      <div id="edu-items" class="edu-items"></div>
+      <div id="edu-empty" class="edu-empty" hidden><span>⌕</span><strong>没有找到匹配的内容</strong><p>试试其他关键词或课程。</p><button id="edu-reset">清除筛选</button></div>
+      <div class="edu-paging"><span id="edu-page-count">已显示全部 3 个任务</span></div>
+    </div>
+    <article id="edu-detail-screen" hidden></article>
+  </div>
+  <div id="edu-selection" class="edu-selection" hidden><div class="edu-selection-top"><span>已选 <strong id="edu-selected-count">0</strong> 个对话</span><button id="edu-cancel-selection" class="cm-link">取消选择</button></div><button id="edu-batch-link" class="cm-primary">关联任务</button></div>
+  <div id="edu-message" class="edu-message" role="status" aria-live="polite"></div>
+  <footer class="edu-status"><span><i class="edu-dot"></i>采集正常</span><span id="edu-sync-time">最近同步 15:03</span></footer>
+  <div id="edu-overlay" class="edu-overlay" hidden><section class="edu-sheet" role="dialog" aria-modal="true" aria-labelledby="edu-sheet-title" tabindex="-1"><div class="edu-sheet-heading"><h2 id="edu-sheet-title">关联课程任务</h2><button id="edu-close-sheet" class="edu-icon" aria-label="关闭关联窗口">×</button></div><p class="cm-muted" id="edu-sheet-summary"></p><label class="cm-field">选择任务<select id="edu-link-task"></select></label><fieldset class="edu-action"><legend class="edu-sr">关联操作</legend><label><input type="radio" name="edu-action" value="add" checked>添加关联</label><label><input type="radio" name="edu-action" value="remove">解除关联</label></fieldset><div class="edu-scope-note">关联整个会话，包含后续内容。<br>关联不会将任务标记为完成。</div><div id="edu-link-preview" class="edu-link-preview" hidden></div><div class="edu-sheet-footer"><button id="edu-cancel-sheet">取消</button><button id="edu-confirm-link" class="cm-primary">预览变更</button></div></section></div>
+</section>
+<section data-page="home" class="cm-window cm-tool" hidden>
+<header class="cm-bar"><div class="cm-brand"><span class="cm-logo">C</span>CourseMind</div><div class="edu-tools"><button class="cm-link" data-view="education">课程与 AI 对话</button><button data-open-settings aria-label="打开插件设置">⚙</button></div></header>
 <div class="cm-content">
 <div class="cm-card"><div class="cm-person"><div class="cm-avatar">张</div><div><div class="cm-name">张同学</div><div class="cm-muted">学号 20240105001</div></div></div><div class="cm-rule"></div><div class="cm-row"><span class="cm-muted">班级</span><span>24级计科5班</span></div><div class="cm-row" style="margin-top:7px"><span class="cm-muted">账号状态</span><span class="cm-status">● 已登录</span></div><div class="cm-rule"></div><div class="cm-row"><button class="cm-link" id="cm-change">修改密码</button><button class="cm-link" id="cm-logout">退出登录</button></div></div>
 <div id="cm-password" class="cm-password" hidden><div class="cm-name">修改密码</div><label class="cm-field">当前密码<input type="password" autocomplete="current-password"></label><label class="cm-field">新密码<input type="password" autocomplete="new-password"></label><label class="cm-field">确认新密码<input type="password" autocomplete="new-password"></label><div class="cm-row" style="margin-top:14px"><button id="cm-cancel-password">取消</button><button class="cm-primary" id="cm-save-password">确认修改</button></div><div id="cm-password-msg" class="cm-toast" role="status"></div></div>
@@ -58,6 +103,138 @@
 </div>
 <script>
 (function(){const r=document.getElementById('cm-ui'),q=s=>r.querySelector(s),all=s=>r.querySelectorAll(s);let logged=true;const snapshot=()=>Array.from(all('[data-page="settings"] input')).map(e=>({value:e.value,checked:e.checked}));let saved=snapshot();function show(v){all('[data-page]').forEach(e=>e.hidden=e.dataset.page!==v);all('[data-view]').forEach(e=>e.setAttribute('aria-pressed',String(e.dataset.view===v)))}function network(){const campus=q('[name="cm-network"]:checked').value==='campus';const address=q(campus?'#cm-campus':'#cm-public').value.trim();all('[data-effective]').forEach(e=>e.textContent=address||'校园内网地址尚未配置');all('[data-network-label]').forEach(e=>e.textContent=campus?'校园内网':'公网');return address}function count(){q('#cm-configure').textContent='配置已勾选工具（'+all('[data-tool]:checked').length+'）'}function apply(){const addr=network();try{const u=new URL(addr);if(!['http:','https:'].includes(u.protocol))throw Error()}catch{q('#cm-save-msg').textContent='请填写有效的服务器地址';return false}saved=snapshot();q('#cm-save-msg').textContent='演示：设置已保存';return true}all('[data-view]').forEach(b=>b.onclick=()=>show(b.dataset.view));all('[data-open-settings]').forEach(b=>b.onclick=()=>{saved=snapshot();show('settings')});all('[name="cm-network"],#cm-public,#cm-campus').forEach(e=>e.oninput=network);all('[data-tool]').forEach(e=>e.onchange=count);q('#cm-login-form').onsubmit=e=>{e.preventDefault();if(!network()){q('#cm-login-msg').textContent='请先配置服务器地址';return}logged=true;q('#cm-credential').textContent='已登录（演示）';q('#cm-login-password').value='';show('home')};q('#cm-logout').onclick=()=>{logged=false;q('#cm-credential').textContent='待登录';q('#cm-password').hidden=true;show('login')};q('#cm-change').onclick=()=>q('#cm-password').hidden=false;q('#cm-cancel-password').onclick=()=>q('#cm-password').hidden=true;q('#cm-save-password').onclick=()=>{const a=q('#cm-password').querySelectorAll('input');q('#cm-password-msg').textContent=!a[0].value||!a[1].value?'请填写当前密码和新密码':a[1].value!==a[2].value?'两次输入的新密码不一致':'演示：密码修改成功'};q('#cm-usage-toggle').onclick=()=>{const b=q('#cm-usage-body');b.hidden=!b.hidden;q('#cm-usage-toggle').setAttribute('aria-expanded',String(!b.hidden));q('#cm-chevron').textContent=b.hidden?'⌄':'⌃'};all('[data-session]').forEach(b=>b.onclick=()=>{q('#cm-session-detail').hidden=false;q('#cm-session-text').textContent=b.dataset.session==='injection'?'学生：为什么我的 @Autowired 注入失败？　AI：请提供报错信息，先检查组件扫描范围。':'学生：帮我梳理图书管理系统的借阅需求。　AI：从借阅资格、库存校验、借阅期限和归还流程逐项梳理。'});q('#cm-close-session').onclick=()=>q('#cm-session-detail').hidden=true;q('#cm-configure').onclick=()=>{const selected=all('[data-tool]:checked');if(!selected.length){q('#cm-tool-msg').textContent='请至少勾选一个工具';return}selected.forEach(e=>{const status=Array.from(all('[data-tool-status]')).find(x=>x.dataset.toolStatus===e.dataset.tool);status.textContent='已配置（演示）';status.className='cm-status'});q('#cm-tool-msg').textContent='演示：已配置 '+Array.from(selected).map(e=>e.dataset.tool).join('、')};q('#cm-test').onclick=()=>q('#cm-test-msg').textContent=network()?'演示：服务器连接正常':'请先填写校园内网服务器地址';q('#cm-detect').onclick=()=>q('#cm-detect-msg').textContent='演示：采集客户端可用';q('#cm-repair').onclick=()=>q('#cm-detect-msg').textContent='演示：采集客户端修复完成';q('#cm-apply').onclick=apply;q('#cm-ok').onclick=()=>{if(apply())show(logged?'home':'login')};q('#cm-settings-cancel').onclick=()=>{all('[data-page="settings"] input').forEach((e,i)=>{e.value=saved[i].value;e.checked=saved[i].checked});network();count();show(logged?'home':'login')};all('button').forEach(b=>b.classList.add('cursor-interaction'));})();
+</script>
+<script>
+// Standalone interaction prototype. All records below are fictional; no API or storage writes.
+(() => {
+  const root = document.getElementById('cm-ui');
+  const $ = selector => root.querySelector(selector);
+  const $$ = selector => [...root.querySelectorAll(selector)];
+  const escape = text => String(text).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const tasks = [
+    {id:1, course:'web', courseName:'JavaWeb 开发技术', group:'计科 2 班', title:'HTTP 请求参数校验', kind:'实验', status:'进行中', tone:'edu-green', due:'明天 23:59 截止', summary:'实现 GET /greet 接口，理解参数校验与 HTTP 状态码。', writable:true},
+    {id:2, course:'web', courseName:'JavaWeb 开发技术', group:'计科 2 班', title:'使用 Filter 实现登录校验', kind:'练习', status:'进行中', tone:'edu-green', due:'10月30日 23:59 截止', summary:'拦截未登录请求，梳理 Session 与重定向的工作流程。', writable:true},
+    {id:3, course:'java', courseName:'Java 程序设计', group:'计科 2 班', title:'集合框架与学生信息管理', kind:'实验', status:'已关闭', tone:'', due:'10月22日已截止', summary:'使用 List 和 Map 实现学生信息的查询与去重。', writable:false}
+  ];
+  const chats = [
+    {id:1, title:'如何为 /greet 接口添加参数校验？', time:'15:03', count:6, preview:'我已经实现了基本接口，name 为空时应该返回什么状态码？', links:[1]},
+    {id:2, title:'为什么我的 Filter 没有拦截到请求？', time:'14:42', count:4, preview:'检查 URL 映射规则、过滤器注册方式，以及请求经过的路径。', links:[]},
+    {id:3, title:'帮我理解 Session 和 Cookie 的区别', time:'11:20', count:8, preview:'用登录状态保持的例子，解释服务端和浏览器分别保存什么。', links:[2]},
+    {id:4, title:'ArrayList 和 HashMap 应该怎么选？', time:'昨天', count:2, preview:'学生信息需要按学号快速查找，同时保留录入顺序。', links:[3]}
+  ];
+  let tab = 'tasks', detail = null, selectMode = false, targetTask = 1, prepared = null, dialogIds = [], dialogOpener;
+  const selected = new Set();
+  const taskById = id => tasks.find(task => task.id === Number(id));
+  const message = text => { $('#edu-message').textContent = text; };
+  function updateSelection() {
+    $('#edu-selection').hidden = !selectMode || tab !== 'chats' || detail !== null;
+    $('#edu-selected-count').textContent = selected.size;
+    $('#edu-batch-link').disabled = !selected.size;
+    $('#edu-select-mode').textContent = selectMode ? '完成选择' : '批量关联';
+  }
+  function renderList() {
+    const course = $('#edu-course').value, query = $('#edu-search').value.trim().toLowerCase(), relation = $('#edu-linked').value;
+    const source = tab === 'tasks' ? tasks : chats;
+    const rows = source.filter(row => {
+      const related = tab === 'tasks' ? [row] : row.links.map(taskById);
+      return (course === 'all' || related.some(task => task.course === course)) &&
+        (tab === 'tasks' || relation === 'all' || (row.links.length > 0) === (relation === 'yes')) &&
+        (!query || [row.title, row.summary || row.preview, ...related.map(task => task.courseName + task.title)].join(' ').toLowerCase().includes(query));
+    });
+    $('#edu-items').innerHTML = rows.map(row => tab === 'tasks' ? `
+      <article class="edu-item"><div class="edu-item-top"><span class="edu-course-label">${row.courseName}</span><span class="edu-chip ${row.tone}">${row.status}</span></div>
+      <button class="edu-item-title" data-task-detail="${row.id}">${row.title}</button><p class="edu-item-summary">${row.summary}</p>
+      <div class="edu-item-bottom"><span>${row.kind} · ${row.group}</span><span class="${row.id === 1 ? 'cm-warning' : ''}">${row.due}</span></div></article>` : `
+      <article class="edu-item edu-chat-card ${selected.has(row.id) ? 'edu-selected' : ''}">${selectMode ? `<input type="checkbox" data-chat-select="${row.id}" aria-label="选择对话：${escape(row.title)}" ${selected.has(row.id) ? 'checked' : ''}>` : ''}
+      <div class="edu-chat-content"><div class="edu-item-top"><span>CodeBuddy · ${row.time}</span><span>${row.count} 条消息</span></div>
+      <button class="edu-item-title" data-chat-detail="${row.id}">${row.title}</button><p class="edu-item-summary">${row.preview}</p><div class="edu-tags">${row.links.length ? row.links.map(id => `<button class="edu-task-tag" data-task-detail="${id}" title="${taskById(id).courseName} · ${taskById(id).title}">↗ ${taskById(id).title}</button>`).join('') : '<span class="edu-chip">未关联任务</span>'}</div></div></article>`).join('');
+    $('#edu-empty').hidden = rows.length !== 0;
+    $('#edu-list-label').textContent = `${tab === 'tasks' ? '本学期' : '最近对话'} · ${rows.length} 个${tab === 'tasks' ? '任务' : '对话'}`;
+    $('#edu-page-count').textContent = rows.length ? `已显示全部 ${rows.length} 个${tab === 'tasks' ? '任务' : '对话'}` : '';
+    updateSelection();
+  }
+  function switchTab(next) {
+    tab = next; detail = null; selectMode = false; selected.clear();
+    $('#edu-list-screen').hidden = false; $('#edu-detail-screen').hidden = true;
+    $$('.edu-tabs button').forEach(button => button.setAttribute('aria-selected', String(button.dataset.eduTab === tab)));
+    $('#edu-browser').setAttribute('aria-labelledby', tab === 'tasks' ? 'edu-task-tab' : 'edu-chat-tab');
+    $('#edu-chat-filters').hidden = tab !== 'chats'; $('#edu-select-mode').hidden = tab !== 'chats';
+    $('#edu-search').placeholder = tab === 'tasks' ? '搜索课程任务' : '搜索对话内容';
+    $('#edu-search').value = ''; $('#edu-course').value = 'all'; $('#edu-linked').value = 'all';
+    $('#edu-browser').scrollTop = 0; message(''); renderList();
+  }
+  function openDetail(kind, id) {
+    detail = {kind, id:Number(id)}; const task = kind === 'task' ? taskById(id) : null, chat = chats.find(row => row.id === Number(id));
+    $('#edu-list-screen').hidden = true; $('#edu-detail-screen').hidden = false;
+    $('#edu-detail-screen').innerHTML = task ? `
+      <button class="cm-link edu-back" data-back>‹ 返回${tab === 'tasks' ? '课程任务' : '我的对话'}</button>
+      <div class="edu-item-top"><span>${task.courseName}</span><span class="edu-chip ${task.tone}">${task.status}</span></div>
+      <h2 class="edu-detail-heading">${task.title}</h2><div class="edu-detail-meta">${task.kind} · ${task.group} · 陈老师<br>${task.due} · 北京时间</div>
+      <div class="edu-detail-copy"><h3>任务目标</h3><p>${task.summary}</p>${task.id === 1 ? '<h3>实现要求</h3><ol><li>实现 <code>GET /greet?name=</code>，返回 UTF-8 JSON。</li><li>name 缺失或为空白时，返回 400。</li><li>其他请求方法返回 405，并设置 Allow: GET。</li><li>使用 CodeBuddy 辅助实现，在 IDEA 中运行并验证。</li></ol><h3>学习记录</h3><p>完成实践后，将相关 AI 对话关联到本任务，方便自己回顾，也方便教师了解学习过程。</p>' : '<h3>实践要求</h3><p>先梳理实现思路，再借助 AI 完成编码。请在 IDEA 中运行并验证关键场景，保留讨论与排错过程。</p>'}</div>
+      <div class="edu-detail-actions">${task.writable ? `<button class="cm-primary" data-task-chats="${task.id}">关联已有 AI 对话</button><div class="edu-secondary"><button class="cm-link" data-set-hint="${task.id}">设为当前任务提示</button><button class="cm-link" data-web>在网页查看 ↗</button></div>` : '<div class="edu-scope-note">任务已关闭，保留原有对话关联，可继续查看。</div><button data-web>在网页查看 ↗</button>'}</div>` : `
+      <button class="cm-link edu-back" data-back>‹ 返回我的对话</button><div class="edu-item-top"><span>CodeBuddy · 今天 ${chat.time}</span><span>${chat.count} 条消息</span></div><h2 class="edu-detail-heading">${chat.title}</h2>
+      <div class="edu-tags">${chat.links.length ? chat.links.map(id => `<button class="edu-task-tag" data-task-detail="${id}">${taskById(id).title}</button>`).join('') : '<span class="edu-chip">未关联任务</span>'}</div>
+      <div class="edu-detail-copy"><h3>你</h3><p>${chat.title}</p><h3>CodeBuddy</h3><p>${chat.preview}</p><div class="edu-scope-note">原型仅展示消息预览；完整对话在教学工作台查看。</div></div><div class="edu-detail-actions"><button class="cm-primary" data-edit-chat="${chat.id}">整理任务关联</button><button class="cm-link" data-web>在网页查看完整对话 ↗</button></div>`;
+    $('#edu-browser').scrollTop = 0; updateSelection(); $('#edu-detail-screen [data-back]').focus();
+  }
+  function closeSheet() { $('#edu-overlay').hidden = true; prepared = null; dialogOpener?.focus(); }
+  function resetPreview() { prepared = null; $('#edu-link-preview').hidden = true; $('#edu-confirm-link').textContent = '预览变更'; }
+  function openSheet(ids) {
+    dialogOpener = document.activeElement; dialogIds = ids;
+    $('#edu-link-task').innerHTML = tasks.filter(task => task.writable).map(task => `<option value="${task.id}">${task.courseName} · ${task.title}</option>`).join('');
+    $('#edu-link-task').value = targetTask; $('[name="edu-action"][value="add"]').checked = true;
+    $('#edu-sheet-summary').textContent = `为 ${ids.length} 个对话整理任务关联，可重复操作。`;
+    resetPreview(); $('#edu-overlay').hidden = false; $('#edu-link-task').focus();
+  }
+  $$('.edu-tabs button').forEach(button => button.onclick = () => switchTab(button.dataset.eduTab));
+  $$('.edu-tabs button').forEach(button => button.onkeydown = event => {
+    if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    event.preventDefault(); switchTab(event.key === 'Home' ? 'tasks' : event.key === 'End' ? 'chats' : tab === 'tasks' ? 'chats' : 'tasks');
+    $(`[data-edu-tab="${tab}"]`).focus();
+  });
+  $('#edu-course').onchange = renderList; $('#edu-search').oninput = renderList; $('#edu-linked').onchange = renderList;
+  $('#edu-reset').onclick = () => { $('#edu-course').value = 'all'; $('#edu-search').value = ''; $('#edu-linked').value = 'all'; renderList(); };
+  $('#edu-select-mode').onclick = () => { selectMode = !selectMode; selected.clear(); renderList(); };
+  $('#edu-cancel-selection').onclick = () => { selectMode = false; selected.clear(); renderList(); };
+  $('#edu-batch-link').onclick = () => openSheet([...selected]);
+  $('#edu-items').onchange = event => { const id = Number(event.target.dataset.chatSelect); if (!id) return; event.target.checked ? selected.add(id) : selected.delete(id); event.target.closest('article').classList.toggle('edu-selected', selected.has(id)); updateSelection(); };
+  $('#edu-browser').onclick = event => {
+    const button = event.target.closest('button'); if (!button) return;
+    if (button.hasAttribute('data-task-detail')) openDetail('task', button.dataset.taskDetail);
+    if (button.hasAttribute('data-chat-detail')) openDetail('chat', button.dataset.chatDetail);
+    if (button.hasAttribute('data-back')) { detail = null; $('#edu-list-screen').hidden = false; $('#edu-detail-screen').hidden = true; renderList(); }
+    if (button.hasAttribute('data-task-chats')) { const id = Number(button.dataset.taskChats); switchTab('chats'); targetTask = id; selectMode = true; renderList(); message('选择与该任务相关的对话，再点击底部“关联任务”。'); }
+    if (button.hasAttribute('data-set-hint')) { const task = taskById(button.dataset.setHint); $('#edu-hint-title').textContent = task.title; $('#edu-hint').hidden = false; message('已设置当前窗口提示，不会自动关联对话。'); }
+    if (button.hasAttribute('data-edit-chat')) openSheet([Number(button.dataset.editChat)]);
+    if (button.hasAttribute('data-web')) message('原型演示：实际插件将打开对应教学工作台页面。');
+  };
+  $('#edu-clear-hint').onclick = () => { $('#edu-hint').hidden = true; message('已清除当前窗口任务提示。'); };
+  $('#edu-close-sheet').onclick = closeSheet; $('#edu-cancel-sheet').onclick = closeSheet;
+  $('#edu-overlay').onclick = event => { if (event.target === $('#edu-overlay')) closeSheet(); };
+  $('#edu-link-task').onchange = resetPreview; $$('[name="edu-action"]').forEach(input => input.onchange = resetPreview);
+  $('#edu-confirm-link').onclick = () => {
+    const id = Number($('#edu-link-task').value), action = $('[name="edu-action"]:checked').value;
+    if (!prepared) {
+      const changed = dialogIds.filter(sid => chats.find(chat => chat.id === sid).links.includes(id) === (action === 'remove'));
+      prepared = {id, action, changed}; $('#edu-link-preview').hidden = false;
+      $('#edu-link-preview').textContent = `将${action === 'add' ? '添加' : '解除'} ${changed.length} 个对话的关联。${dialogIds.length - changed.length} 个无需变更。`;
+      $('#edu-confirm-link').textContent = action === 'add' ? '确认关联' : '确认解除'; return;
+    }
+    const result = prepared;
+    result.changed.forEach(sid => { const chat = chats.find(row => row.id === sid); if (result.action === 'add') chat.links.push(result.id); else chat.links = chat.links.filter(id => id !== result.id); });
+    closeSheet(); renderList(); if (detail) openDetail(detail.kind, detail.id);
+    message(`演示：已${result.action === 'add' ? '关联' : '解除'} ${result.changed.length} 个对话。`);
+  };
+  root.addEventListener('keydown', event => {
+    if ($('#edu-overlay').hidden) return;
+    if (event.key === 'Escape') { event.preventDefault(); closeSheet(); }
+    if (event.key === 'Tab') { const controls = [...$('.edu-sheet').querySelectorAll('button, select, input')]; const first = controls[0], last = controls.at(-1); if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); } }
+  });
+  $('#edu-refresh').onclick = () => { renderList(); $('#edu-sync-time').textContent = '刚刚同步'; message('演示：课程任务与对话已刷新。'); };
+  $('#edu-width').onchange = event => root.style.setProperty('--edu-width', event.target.value + 'px');
+  $('#edu-theme').onclick = () => { const dark = $('#edu-theme').getAttribute('aria-pressed') !== 'true'; document.documentElement.style.colorScheme = dark ? 'dark' : 'light'; $('#edu-theme').setAttribute('aria-pressed', String(dark)); $('#edu-theme').textContent = dark ? '浅色预览' : '深色预览'; };
+  renderList();
+})();
 </script>
 
 </div>
