@@ -31,13 +31,13 @@
 @media(max-width:420px){body{padding:6px 0}#cm-ui .edu-preview{font-size:11px;margin-bottom:12px}#cm-ui .edu-window{min-height:540px;max-height:none;height:780px}#cm-ui .cm-nav{gap:5px}#cm-ui .cm-nav button{font-size:12px;padding:5px 8px}}
 </style>
 <div class="cm-stage">
-<div class="cm-nav" aria-label="预览页面"><button data-view="education" aria-pressed="true">课程与 AI 对话</button><button data-view="home" aria-pressed="false">账号与使用概览</button><button data-view="login" aria-pressed="false">未登录</button><button data-view="settings" aria-pressed="false">插件设置</button></div>
+<div class="cm-nav" aria-label="预览页面"><button data-view="education" aria-pressed="true">课程任务</button><button data-view="home" aria-pressed="false">账号与使用概览</button><button data-view="login" aria-pressed="false">未登录</button><button data-view="settings" aria-pressed="false">插件设置</button></div>
 <div class="edu-preview"><span>IDEA 工具窗口原型 · 示例数据</span><div><label>侧栏宽度 <select id="edu-width"><option value="390">390 px</option><option value="320">320 px</option><option value="520">520 px</option></select></label><button id="edu-theme" aria-pressed="false">深色预览</button></div></div>
 <section data-page="education" class="cm-window cm-tool edu-window">
   <header class="cm-bar"><div class="cm-brand"><span class="cm-logo">C</span>CourseMind</div><div class="edu-tools"><button id="edu-refresh" class="edu-icon" title="刷新课程与会话" aria-label="刷新课程与会话">↻</button><button data-open-settings class="edu-icon" title="插件设置" aria-label="打开插件设置">⚙</button></div></header>
   <div class="edu-identity"><span><i class="edu-dot"></i>张同学 <span class="cm-muted">· 20240105001</span></span><button class="cm-link" data-view="home">账号</button></div>
-  <div class="edu-heading"><h1>课程与 AI 对话</h1></div>
-  <div class="edu-tabs" role="tablist" aria-label="课程与对话"><button id="edu-task-tab" role="tab" aria-selected="true" aria-controls="edu-browser" data-edu-tab="tasks">课程任务 <span>3</span></button><button id="edu-chat-tab" role="tab" aria-selected="false" aria-controls="edu-browser" data-edu-tab="chats">我的对话 <span>4</span></button></div>
+  <div class="edu-heading"><h1>课程任务</h1></div>
+  <div class="edu-tabs" role="tablist" aria-label="课程任务内容"><button id="edu-task-tab" role="tab" aria-selected="true" aria-controls="edu-browser" data-edu-tab="tasks">任务列表 <span>3</span></button><button id="edu-chat-tab" role="tab" aria-selected="false" aria-controls="edu-browser" data-edu-tab="chats">我的对话 <span>4</span></button></div>
   <div id="edu-hint" class="edu-hint" hidden><div><strong>当前任务提示</strong><span id="edu-hint-title"></span></div><button id="edu-clear-hint" class="edu-icon" aria-label="清除当前任务提示">×</button><small>仅提示当前窗口，不会自动关联对话。</small></div>
   <div class="edu-body" id="edu-browser" role="tabpanel" aria-labelledby="edu-task-tab">
     <div id="edu-list-screen">
@@ -55,7 +55,7 @@
   <div id="edu-overlay" class="edu-overlay" hidden><section class="edu-sheet" role="dialog" aria-modal="true" aria-labelledby="edu-sheet-title" tabindex="-1"><div class="edu-sheet-heading"><h2 id="edu-sheet-title">关联课程任务</h2><button id="edu-close-sheet" class="edu-icon" aria-label="关闭关联窗口">×</button></div><p class="cm-muted" id="edu-sheet-summary"></p><label class="cm-field">选择任务<select id="edu-link-task"></select></label><fieldset class="edu-action"><legend class="edu-sr">关联操作</legend><label><input type="radio" name="edu-action" value="add" checked>添加关联</label><label><input type="radio" name="edu-action" value="remove">解除关联</label></fieldset><div class="edu-scope-note">关联整个会话，包含后续内容。<br>关联不会将任务标记为完成。</div><div id="edu-link-preview" class="edu-link-preview" hidden></div><div class="edu-sheet-footer"><button id="edu-cancel-sheet">取消</button><button id="edu-confirm-link" class="cm-primary">预览变更</button></div></section></div>
 </section>
 <section data-page="home" class="cm-window cm-tool" hidden>
-<header class="cm-bar"><div class="cm-brand"><span class="cm-logo">C</span>CourseMind</div><div class="edu-tools"><button class="cm-link" data-view="education">课程与 AI 对话</button><button data-open-settings aria-label="打开插件设置">⚙</button></div></header>
+<header class="cm-bar"><div class="cm-brand"><span class="cm-logo">C</span>CourseMind</div><div class="edu-tools"><button class="cm-link" data-view="education">课程任务</button><button data-open-settings aria-label="打开插件设置">⚙</button></div></header>
 <div class="cm-content">
 <div class="cm-card"><div class="cm-person"><div class="cm-avatar">张</div><div><div class="cm-name">张同学</div><div class="cm-muted">学号 20240105001</div></div></div><div class="cm-rule"></div><div class="cm-row"><span class="cm-muted">班级</span><span>24级计科5班</span></div><div class="cm-row" style="margin-top:7px"><span class="cm-muted">账号状态</span><span class="cm-status">● 已登录</span></div><div class="cm-rule"></div><div class="cm-row"><button class="cm-link" id="cm-change">修改密码</button><button class="cm-link" id="cm-logout">退出登录</button></div></div>
 <div id="cm-password" class="cm-password" hidden><div class="cm-name">修改密码</div><label class="cm-field">当前密码<input type="password" autocomplete="current-password"></label><label class="cm-field">新密码<input type="password" autocomplete="new-password"></label><label class="cm-field">确认新密码<input type="password" autocomplete="new-password"></label><div class="cm-row" style="margin-top:14px"><button id="cm-cancel-password">取消</button><button class="cm-primary" id="cm-save-password">确认修改</button></div><div id="cm-password-msg" class="cm-toast" role="status"></div></div>
@@ -167,7 +167,7 @@
     detail = {kind, id:Number(id)}; const task = kind === 'task' ? taskById(id) : null, chat = chats.find(row => row.id === Number(id));
     $('#edu-list-screen').hidden = true; $('#edu-detail-screen').hidden = false;
     $('#edu-detail-screen').innerHTML = task ? `
-      <button class="cm-link edu-back" data-back>‹ 返回${tab === 'tasks' ? '课程任务' : '我的对话'}</button>
+      <button class="cm-link edu-back" data-back>‹ 返回${tab === 'tasks' ? '任务列表' : '我的对话'}</button>
       <div class="edu-item-top"><span>${task.courseName}</span><span class="edu-chip ${task.tone}">${task.status}</span></div>
       <h2 class="edu-detail-heading">${task.title}</h2><div class="edu-detail-meta">${task.kind} · ${task.group} · 陈老师<br>${task.due} · 北京时间</div>
       <div class="edu-detail-copy"><h3>任务目标</h3><p>${task.summary}</p>${task.id === 1 ? '<h3>实现要求</h3><ol><li>实现 <code>GET /greet?name=</code>，返回 UTF-8 JSON。</li><li>name 缺失或为空白时，返回 400。</li><li>其他请求方法返回 405，并设置 Allow: GET。</li><li>使用 CodeBuddy 辅助实现，在 IDEA 中运行并验证。</li></ol><h3>学习记录</h3><p>完成实践后，将相关 AI 对话关联到本任务，方便自己回顾，也方便教师了解学习过程。</p>' : '<h3>实践要求</h3><p>先梳理实现思路，再借助 AI 完成编码。请在 IDEA 中运行并验证关键场景，保留讨论与排错过程。</p>'}</div>
