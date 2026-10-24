@@ -20,16 +20,25 @@ public final class EducationData {
                        String status, String timeStatus, String openAt, String dueAt, boolean removed,
                        String markdown, List<String> resources) {
         public boolean linkable() { return "published".equals(status) && !removed; }
-        @Override public String toString() { return title + " · " + group + " · " + statusLabel(status); }
+        @Override public String toString() { return course + " · " + title + " · " + group; }
         public String detail() {
-            return course + " · " + group + "\n" + statusLabel(status) + (removed ? " · 已移除" : " · " + timeLabel(timeStatus))
+            return course + " · " + group + "\n" + metadata() + "\n\n" + markdown
+                + (resources.isEmpty() ? "" : "\n\n资源链接：\n" + String.join("\n", resources));
+        }
+        public String metadata() {
+            return statusLabel(status) + (removed ? " · 已移除" : " · " + timeLabel(timeStatus))
                 + "\n开放：" + time(openAt) + "\n截止：" + (dueAt == null ? "不设截止" : time(dueAt))
-                + "（北京时间）\n\n" + markdown + (resources.isEmpty() ? "" : "\n\n资源链接：\n" + String.join("\n", resources));
+                + "（北京时间）";
         }
     }
-    public record Session(long id, String sourceId, String source, String machine, int recordCount, String lastAt) {
-        @Override public String toString() { return sourceId + " · " + source + " · " + recordCount + " 条"; }
+    public record LinkedTask(int id, String title, String course, String group) {
+        @Override public String toString() { return title + " · " + course; }
     }
+    public record Session(long id, String sourceId, String source, String machine, int recordCount, String lastAt,
+                          String title, List<LinkedTask> linkedTasks) {
+        @Override public String toString() { return title + " · " + source + " · " + recordCount + " 条"; }
+    }
+    public record ChatMessage(String role, String text, String timestamp) { }
     public record Pair(int taskId, long sessionId) { }
     public record LinkResult(int taskId, long sessionId, String status, String message) {
         public String label() { return switch (status) {
@@ -50,8 +59,17 @@ public final class EducationData {
             text(json, "body_markdown"), List.copyOf(links));
     }
     public static Session session(JsonObject json) {
+        String title = optional(json, "title");
+        List<LinkedTask> linked = json.has("linked_tasks") ? list(json.get("linked_tasks"), item -> new LinkedTask(
+            id(item, "id"), text(item, "title"), text(item, "course_name"), text(item, "group_name"))) : List.of();
         return new Session(positive(json, "id"), text(json, "source_session_id"), text(json, "source"),
-            text(json, "machine_id"), json.get("record_count").getAsInt(), text(json, "last_at"));
+            text(json, "machine_id"), json.get("record_count").getAsInt(), text(json, "last_at"),
+            title == null || title.isBlank() ? "暂无学生消息" : title, linked);
+    }
+    public static ChatMessage chatMessage(JsonObject json) {
+        String role = text(json, "record_type"), body = optional(json, "user".equals(role) ? "prompt" : "text_content");
+        if (body == null || body.isBlank()) body = optional(json, "user".equals(role) ? "text_content" : "last_assistant_message");
+        return new ChatMessage(role, body == null ? "暂无文本内容" : body, text(json, "timestamp"));
     }
     public static LinkResult result(JsonObject json) {
         return new LinkResult(id(json, "task_id"), positive(json, "session_id"), text(json, "status"), optional(json, "message"));

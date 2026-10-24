@@ -17,6 +17,21 @@ import java.nio.file.Path;
 
 /** Geometry regression checks run against the real view, without reading shared auth or networking. */
 public class CourseMindPanelLayoutTest extends BasePlatformTestCase {
+    public void testTeachingIdentityStartsOnTasksAndOverviewIsSeparate() throws Exception {
+        CourseMindPanel panel = new CourseMindPanel(getProject());
+        try {
+            AuthSession.Profile profile = new AuthSession.Profile(1, "20240105001", "测试学生", null, "二班", "", null);
+            panel.applySnapshot(new AuthService.Snapshot(AuthService.State.LOGGED_IN,
+                new AuthSession("teaching-ui", "http://example.invalid", "test-only", profile, "now", "test-env", 1), null));
+            render(panel.component(), 320, 640, "teaching-home-320");
+            assertTrue(visibleText(panel.component()).contains("课程任务"));
+            assertFalse(visibleText(panel.component()).contains("账号状态"));
+            findButton(panel.component(), "账号").doClick();
+            assertTrue(visibleText(panel.component()).contains("账号状态"));
+            findButton(panel.component(), "‹ 返回课程任务").doClick();
+            assertFalse(visibleText(panel.component()).contains("账号状态"));
+        } finally { panel.dispose(); }
+    }
     public void testNarrowLoginKeepsFieldsUsableAndWrapsLongServer() throws Exception {
         CourseMindSettings settings = CourseMindSettings.getInstance();
         String previous = settings.getServerUrl();

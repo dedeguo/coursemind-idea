@@ -36,7 +36,7 @@ public class EducationDataTest {
         var failed = EducationData.result(JsonParser.parseString(
             "{\"task_id\":2,\"session_id\":3,\"status\":\"failed\",\"message\":\"任务已关闭\"}").getAsJsonObject());
 
-        assertEquals("s-1 · codebuddy · 4 条", session.toString());
+        assertEquals("暂无学生消息 · codebuddy · 4 条", session.toString());
         assertEquals("已添加", added.label());
         assertEquals("失败：任务已关闭", failed.label());
     }
@@ -46,5 +46,16 @@ public class EducationDataTest {
             "{\"id\":2,\"title\":\"缺字段\"}").getAsJsonObject()));
         assertThrows(ApiException.class, () -> EducationData.page(JsonParser.parseString("[]"), EducationData::task));
         assertEquals(List.of(), EducationData.list(JsonParser.parseString("[]"), EducationData::task));
+    }
+    @Test public void sessionTitlesAndTaskLabelsAreParsedWithoutUsingSourceIds() {
+        var session = EducationData.session(JsonParser.parseString("""
+            {"id":3000000000,"source_session_id":"internal-source-id","source":"codebuddy","machine_id":"pc",
+             "record_count":2,"last_at":"2026-10-24T02:00:00Z","title":"如何校验 HTTP 参数？",
+             "linked_tasks":[{"id":1,"title":"参数校验","course_name":"JavaWeb","group_name":"二班"}]}
+            """).getAsJsonObject());
+        assertEquals(3000000000L, session.id());
+        assertEquals("如何校验 HTTP 参数？", session.title());
+        assertEquals("参数校验", session.linkedTasks().get(0).title());
+        assertFalse(session.toString().contains("internal-source-id"));
     }
 }

@@ -113,9 +113,16 @@ public final class ApiClient {
         return EducationData.task(request("GET", "/api/v1/education/tasks/" + id, token, null));
     }
     public EducationData.Page<EducationData.Session> sessions(String token, int page, Integer taskId, String query) {
+        return sessions(token, page, taskId, query, null, null);
+    }
+    public EducationData.Page<EducationData.Session> sessions(String token, int page, Integer taskId, String query, Integer groupId, Boolean linked) {
         return EducationData.page(requestData("GET", "/api/v1/education/sessions?page_size=20&page=" + page
+                + (groupId == null ? "" : "&group_id=" + groupId) + (linked == null ? "" : "&linked=" + linked)
                 + (taskId == null ? "" : "&task_id=" + taskId)
                 + (query == null || query.isBlank() ? "" : "&q=" + URLEncoder.encode(query, StandardCharsets.UTF_8)), token, null), EducationData::session);
+    }
+    public EducationData.Page<EducationData.ChatMessage> sessionPreview(String token, long id) {
+        return EducationData.page(requestData("GET", "/api/v1/education/sessions/" + id + "/records?page_size=20&page=1", token, null), EducationData::chatMessage);
     }
     public EducationData.Session session(String token, long id) {
         return EducationData.session(request("GET", "/api/v1/education/sessions/" + id, token, null));

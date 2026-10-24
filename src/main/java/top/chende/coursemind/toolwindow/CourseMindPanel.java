@@ -53,6 +53,9 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
     private final JPanel root = new JPanel(new BorderLayout(0, 8));
     private final CardLayout cards = new CardLayout();
     private final JPanel cardPanel = new JPanel(cards);
+    private final CardLayout identityLayout = new CardLayout();
+    private final JPanel identityViews = new JPanel(identityLayout);
+    private final JButton backToTeaching = CourseMindUi.link("‹ 返回课程任务");
 
     private final JTextArea statusLabel = CourseMindUi.note("正在读取登录状态…");
 
@@ -97,7 +100,7 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
     }
 
     private void buildUi() {
-        root.setBorder(JBUI.Borders.empty(16));
+        root.setBorder(JBUI.Borders.empty(10));
         JPanel header = new JPanel(new BorderLayout(JBUI.scale(12), 0));
         JPanel brand = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, JBUI.scale(8), 0));
         brand.add(CourseMindUi.badge("C", 24, false));
@@ -109,10 +112,13 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
         header.setBorder(JBUI.Borders.emptyBottom(12));
         root.add(header, BorderLayout.NORTH);
         cardPanel.add(CourseMindUi.note("正在读取登录状态…"), CARD_LOADING);
-        cardPanel.add(buildLoginCard(), CARD_LOGIN);
+        cardPanel.add(CourseMindUi.scroll(buildLoginCard()), CARD_LOGIN);
         cardPanel.add(buildIdentityCard(), CARD_IDENTITY);
-        cardPanel.add(buildErrorCard(), CARD_ERROR);
-        root.add(CourseMindUi.scroll(CourseMindUi.stack(12, statusLabel, cardPanel)), BorderLayout.CENTER);
+        cardPanel.add(CourseMindUi.scroll(buildErrorCard()), CARD_ERROR);
+        JPanel content = new JPanel(new BorderLayout(0, JBUI.scale(8)));
+        content.add(statusLabel, BorderLayout.NORTH);
+        content.add(cardPanel, BorderLayout.CENTER);
+        root.add(content, BorderLayout.CENTER);
     }
 
     private @NotNull JPanel buildLoginCard() {
@@ -163,7 +169,14 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
         JBLabel footerText = new JBLabel("CourseMind · 让学习过程看得见");
         footerText.setForeground(JBColor.GRAY);
         footer.add(footerText);
-        return CourseMindUi.stack(16, card, passwordChange.component(), usage.component(), teaching.component(), footer);
+        identityViews.add(CourseMindUi.scroll(CourseMindUi.stack(16, backToTeaching, card, passwordChange.component(), usage.component(), footer)), "overview");
+        // CardLayout owns page visibility; the child independently reflects whether a teaching identity exists.
+        JPanel teachingPage = new JPanel(new BorderLayout());
+        teachingPage.add(teaching.component(), BorderLayout.CENTER);
+        identityViews.add(teachingPage, "teaching");
+        teaching.setAccountAction(() -> identityLayout.show(identityViews, "overview"));
+        backToTeaching.addActionListener(e -> identityLayout.show(identityViews, "teaching"));
+        return identityViews;
     }
 
     private @NotNull JPanel buildErrorCard() {
@@ -246,6 +259,9 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
             case LOGGED_IN -> {
                 statusLabel.setText("已登录");
                 renderSession(snapshot.session());
+                boolean education = snapshot.session() != null && snapshot.session().environmentId() != null;
+                backToTeaching.setVisible(education);
+                if (changed) identityLayout.show(identityViews, education ? "teaching" : "overview");
                 cards.show(cardPanel, CARD_IDENTITY);
                 if (snapshot.message() != null) identityMessage.setText(snapshot.message());
                 if (started && snapshot.session() != null) refreshSummary(snapshot.session());
@@ -296,7 +312,10 @@ final class CourseMindPanel implements com.intellij.openapi.Disposable {
                     session, java.time.Clock.systemUTC());
             onEdt(() -> {
                 if (ticket == statusGeneration && scope.equals(statsScope)
-                        && connection.equals(CourseMindSettings.getInstance().connection())) usage.status(status);
+                        && connection.equals(CourseMindSettings.getInstance().connection())) {
+                    usage.status(status);
+                    teaching.captureStatus(status);
+                }
             });
         });
     }
